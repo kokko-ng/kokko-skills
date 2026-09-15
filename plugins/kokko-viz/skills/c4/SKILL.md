@@ -8,11 +8,6 @@ description: Authoring rules and shared templates for C4 architecture and codema
 The rules every generated C4 or codemap document must follow, and the shared
 templates the `/c4-map`, `/c4-update` and `/c4-verify` commands write from.
 
-These rules used to live in the global `CLAUDE.md`, where they applied to every
-session whether or not it touched architecture documentation. They belong here:
-loaded when C4 work is actually happening, alongside the templates they
-constrain.
-
 Read this before writing or editing anything under `codemap/`, and whenever a
 command below cites a `c4-templates.md#...` anchor.
 

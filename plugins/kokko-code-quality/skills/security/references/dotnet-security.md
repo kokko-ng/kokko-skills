@@ -98,7 +98,7 @@ dotnet build
 ## Commit Format
 
 ```text
-security(dotnet): mitigate <RuleID> in <file>
+fix(security): mitigate <RuleID> in <file>
 ```
 
 ## Final Quality Gate

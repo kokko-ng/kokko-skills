@@ -24,8 +24,11 @@ npm audit --json
 
 ```bash
 # Run ESLint with security focus
-npx eslint . --ext .js,.ts,.vue --rule 'no-eval: error'
+npx eslint . --rule 'no-eval: error'
 ```
+
+ESLint 9 with flat config (`eslint.config.js`) resolves file extensions
+itself; on an eslintrc project (ESLint 8) add `--ext .js,.ts,.vue`.
 
 ### Install Security Plugins (if missing)
 
@@ -83,12 +86,12 @@ npx eslint <affected_files>
 ## Commit Format
 
 ```text
-security(eslint): mitigate <issue> in <file>
+fix(security): mitigate <issue> in <file>
 ```
 
 ## Final Quality Gate
 
 ```bash
 npm audit --audit-level=high
-npx eslint . --ext .js,.ts,.vue
+npx eslint .
 ```

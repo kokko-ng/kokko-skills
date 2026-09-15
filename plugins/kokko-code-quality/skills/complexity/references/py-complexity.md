@@ -60,7 +60,7 @@ uv run radon mi -s <target_file>
 ## Commit Format
 
 ```text
-refactor(radon): reduce complexity in <symbol> (C->B)
+refactor(complexity): reduce complexity in <symbol> (C->B)
 ```
 
 ## When to Stop

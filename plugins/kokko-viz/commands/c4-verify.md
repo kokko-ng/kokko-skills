@@ -54,12 +54,13 @@ find codemap/$SYSTEM_ID -type f \
 
 ## Phase 2: Parallel Verification
 
-Launch ALL FIVE subagents in parallel in a single message. Each is
-`Tool: Task`, `subagent_type: "Explore"`. Each receives `SYSTEM_ID` and the
-Phase 1 file listing, and outputs JSON with `check_type`, a score, `findings`,
-and `issues` (per c4-templates.md#validation-issue-schema). Subagents cannot
-read this plugin's files: read that schema section yourself and paste it into
-each of the five prompts you spawn.
+Checks 1-4 need judgment: launch them as four parallel subagents in a single
+message. Each is `Tool: Task`, `subagent_type: "Explore"`. Each receives
+`SYSTEM_ID` and the Phase 1 file listing, and outputs JSON with `check_type`,
+a score, `findings`,
+and `issues` (per c4-templates.md#validation-issue-schema). Subagents see
+only the prompt you give them: read that schema section yourself and paste
+it into each of the four prompts you spawn.
 
 **1. Completeness** (`score: X/3`): All deployable units have folders; all
 major modules documented; all integrations in context.puml.
@@ -81,13 +82,24 @@ is a hyperlink to the actual file that resolves on GitHub (per
 include per level; correct macros per level (see c4-templates.md); not
 overloaded (>15) or sparse; no orphan elements.
 
-**5. Image Pairing**: Each md image ref `![...](./file.png)` has an existing,
-fresh PNG. Expected pairings: `context.md->context.png`,
-`container.md->container.png`, `component.md->component.png`. A PNG is stale if
-its .puml was modified later (`find codemap -name "*.puml" -newer <png>`).
-Output findings: `missing_pngs`, `orphan_pngs`, `stale_pngs`.
+**5. Image Pairing** is deterministic, so run it yourself rather than
+spawning a subagent. Each level's `.md` pairs with a same-named `.png`
+(`context.md->context.png`, `container.md->container.png`,
+`component.md->component.png`), every PNG has a `.puml` source, and a PNG is
+stale when its `.puml` is newer:
 
-Wait for ALL FIVE to complete.
+```bash
+cd codemap/$SYSTEM_ID
+find . -name "*.md" | while read -r md; do png="${md%.md}.png"; [ -f "$png" ] || echo "missing_png: $png"; done
+find . -name "*.png" | while read -r png; do puml="${png%.png}.puml"; [ -f "$puml" ] || echo "orphan_png: $png"; done
+find . -name "*.puml" | while read -r puml; do png="${puml%.puml}.png"; [ -f "$png" ] && [ "$puml" -nt "$png" ] && echo "stale_png: $png"; done
+cd - >/dev/null
+```
+
+Record its output as the fifth check's findings (`missing_pngs`,
+`orphan_pngs`, `stale_pngs`).
+
+Wait for all four subagents to complete.
 
 ---
 
@@ -238,8 +250,6 @@ the only file 6B–6C may touch).
 ## Fixes Applied
 - Structural / Diagrams / Documentation / Navigation / Images: [counts]
 ```
-
-This summary is the deliverable — it goes in the reply, not into a file.
 
 Notes: on subagent failure, continue other checks and note incomplete
 verification; list irreconcilable conflicts for human decision; on fix failure,

@@ -10,7 +10,6 @@ and `/kokko-viz:c4-verify` commands. This is a reference file, not a command.
 ```text
 codemap/
 ├── README.md
-├── VERIFICATION.md
 └── <system-id>/
     ├── context.puml
     ├── context.png
