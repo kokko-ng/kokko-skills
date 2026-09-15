@@ -88,7 +88,7 @@ For each item detected, **thoroughly verify** it is truly unused:
 2. Create a separate commit:
 
    ```bash
-   git add .
+   git add <the files you edited>
    git commit -m "chore(cleanup): remove unused <member>"
    ```
 

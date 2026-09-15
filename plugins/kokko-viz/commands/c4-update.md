@@ -20,9 +20,9 @@ Read the relevant section whenever a step cites a `c4-templates.md#...` anchor
 (if the path above is empty, locate the file with Glob:
 `**/kokko-viz/skills/c4/references/c4-templates.md` under `~/.claude/plugins/`).
 
-**Subagents cannot read this plugin's files.** When a Task prompt below cites
-an anchor, read that section yourself and paste the schema into the prompt
-you spawn. The Task blocks are pseudo-code — do not pin model names in them;
+**Subagents see only the prompt you give them** — not this command, and not
+the plugin path rendered above. When a Task prompt below cites an anchor,
+read that section yourself and paste the schema into the prompt you spawn. The Task blocks are pseudo-code — do not pin model names in them;
 inherit the session model, or use a smaller model for steps marked
 mechanical when the harness supports per-Task selection.
 

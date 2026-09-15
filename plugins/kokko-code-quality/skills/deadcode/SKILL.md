@@ -36,13 +36,14 @@ support it.
 2. **Read reference file**: Load `references/<lang>-deadcode.md` for
    tool-specific instructions
 3. **Run dead code analyzer** using the commands from the reference
-4. **For each finding, THOROUGHLY VERIFY** it is truly unused:
+4. **Verify each finding** is genuinely unused — the tools report false
+   positives on anything reached dynamically:
    - Check all internal imports/references
    - Check dynamic/reflection usage
    - Check framework conventions (DI, ORM, routes, fixtures)
    - Check config-based registrations
    - Check entry points and plugin systems
-5. **Remove verified dead code** ONLY if absolutely certain
+5. **Remove only what you have verified**, one item at a time
 6. **Commit each removal separately**: Use message format
    `chore(cleanup): remove unused <item>`
 7. **Create whitelist/suppression** for false positives with explanation
@@ -55,11 +56,6 @@ Load the appropriate reference based on detected language:
 - Python: `references/py-deadcode.md`
 - JavaScript/TypeScript: `references/js-deadcode.md`
 - .NET: `references/dotnet-deadcode.md`
-
-## Critical Rules
-
-- Handle ONE item at a time - do NOT batch deletions
-- VERIFY thoroughly before removing - many tools have false positives
 
 ## Success Criteria
 

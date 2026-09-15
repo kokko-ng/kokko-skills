@@ -9,9 +9,12 @@ disable-model-invocation: true
 
 Generate a cost breakdown of Azure subscription resources. `$ARGUMENTS` selects `daily`/`weekly` granularity or filters to a resource group.
 
-## CRITICAL — Safety
+## Confirm the scope first
 
-ALWAYS use AskUserQuestion to confirm the subscription and resource group before proceeding. Never assume defaults. List options if needed:
+Confirm the subscription and resource group with AskUserQuestion before
+running any query — the CLI's default subscription is often not the one the
+user means, and a report against the wrong scope is worse than none. List
+the options if needed:
 
 ```bash
 az account list --query "[].{Name:name, Id:id}" -o table

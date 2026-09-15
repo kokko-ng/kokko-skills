@@ -8,8 +8,11 @@
 
 ```bash
 # Check cyclomatic complexity
-npx eslint . --ext .js,.ts,.vue --rule 'complexity: ["warn", 10]'
+npx eslint . --rule 'complexity: ["warn", 10]'
 ```
+
+ESLint 9 with flat config (`eslint.config.js`) resolves file extensions
+itself; on an eslintrc project (ESLint 8) add `--ext .js,.ts,.vue`.
 
 ## Thresholds
 
@@ -72,6 +75,6 @@ refactor(complexity): reduce complexity in <function>
 ## Final Quality Gate
 
 ```bash
-npx eslint . --ext .js,.ts,.vue
+npx eslint .
 npm run build 2>/dev/null || npm run build:check 2>/dev/null || true
 ```

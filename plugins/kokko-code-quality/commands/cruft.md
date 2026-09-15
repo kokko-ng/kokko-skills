@@ -82,10 +82,12 @@ Report files/dirs deleted (with sizes) and patterns added to `.gitignore`.
 
 ## Safety Rules
 
-- NEVER remove files in src/, lib/, or other code directories without explicit confirmation.
-- NEVER remove package.json, pyproject.toml, or config files.
-- NEVER remove README.md, CLAUDE.md, or intentional documentation.
-- NEVER remove files modified in the last hour (likely work in progress).
-- Always show what will be removed BEFORE doing it.
-- Require explicit confirmation for tracked files — they were committed for a reason.
-- When in doubt, suggest adding to .gitignore rather than deleting.
+- Show what will be removed before removing it, and when a file's purpose is
+  unclear suggest a `.gitignore` entry rather than deleting it.
+- Files under src/, lib/, or other code directories, and tracked files in
+  general, go only with the user's explicit confirmation — they were
+  committed for a reason.
+- package.json, pyproject.toml, other config files, README.md, CLAUDE.md,
+  and intentional documentation are never cruft; leave them alone.
+- Leave files modified in the last hour alone: they are likely work in
+  progress.
