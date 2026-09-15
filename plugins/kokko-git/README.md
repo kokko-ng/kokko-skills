@@ -21,5 +21,5 @@ and syncing with the base branch. The janitor skill moved to its own repo:
 
 `/release` never publishes a GitHub release itself: in this repo the
 Release workflow is the sole publisher once CI succeeds on `main`. In repos
-with a `scripts/bump-version.sh` (like kokko-cmds), `/release` uses it
+with a `scripts/bump-version.sh` (like kokko-skills), `/release` uses it
 instead of editing version strings by hand.

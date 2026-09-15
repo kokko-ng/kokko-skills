@@ -1,4 +1,4 @@
-# kokko-cmds
+# kokko-skills
 
 My Claude Code plugin marketplace for day-to-day work.
 Install individual plugins or all of them.
@@ -6,8 +6,12 @@ Install individual plugins or all of them.
 ## Installation
 
 ```bash
-/plugin marketplace add kokko-ng/kokko-cmds
+/plugin marketplace add kokko-ng/kokko-skills
 ```
+
+The marketplace ID stays `kokko-ng-kokko-cmds` (the repository was named
+kokko-cmds until 2026-09-15), so existing installs and their
+`plugin@marketplace` keys keep working unchanged.
 
 Then install the plugins you want:
 
