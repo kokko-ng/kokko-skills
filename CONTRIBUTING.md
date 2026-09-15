@@ -6,7 +6,7 @@ Add your checkout as a local marketplace and install plugins straight from
 it:
 
 ```text
-/plugin marketplace add /path/to/kokko-cmds
+/plugin marketplace add /path/to/kokko-skills
 /plugin install kokko-notifications@kokko-ng-kokko-cmds
 ```
 

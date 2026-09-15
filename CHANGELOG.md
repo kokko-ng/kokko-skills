@@ -4,7 +4,15 @@ All plugins version in lock-step, so one entry covers the whole
 marketplace. Format loosely follows [Keep a
 Changelog](https://keepachangelog.com/). Releases before 3.6.0 are
 documented in [GitHub
-Releases](https://github.com/kokko-ng/kokko-cmds/releases) only.
+Releases](https://github.com/kokko-ng/kokko-skills/releases) only.
+
+## Unreleased
+
+### Changed
+
+- Repository renamed from kokko-cmds to kokko-skills. The marketplace ID
+  `kokko-ng-kokko-cmds` is unchanged, so installed plugins and their
+  `plugin@marketplace` keys keep working; GitHub redirects the old URL.
 
 ## 4.0.0 - 2026-09-15
 
