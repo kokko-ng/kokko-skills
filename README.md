@@ -24,12 +24,11 @@ Then install the plugins you want:
 /plugin install kokko-infra@kokko-ng-kokko-cmds
 /plugin install kokko-ai-config@kokko-ng-kokko-cmds
 /plugin install kokko-env@kokko-ng-kokko-cmds
-/plugin install kokko-learning@kokko-ng-kokko-cmds
 ```
 
 ## Versioning
 
-All nine plugins version in lock-step: every release bumps every plugin (and
+All eight plugins version in lock-step: every release bumps every plugin (and
 every marketplace entry) to the same version, even ones that did not change.
 See [CONTRIBUTING.md](CONTRIBUTING.md).
 
@@ -170,20 +169,3 @@ Set up a dev environment, then keep it current without rebuilding it. See
 `/devcontainer-update` applies the config by re-running the project's own
 `post-create.sh --config-only`. A `.devcontainer/` copied before that flag
 existed needs updating first — the command detects this and says so.
-
-### kokko-learning
-
-Study and recall aids. See
-[plugins/kokko-learning/README.md](plugins/kokko-learning/README.md).
-
-| Skill | Purpose |
-| ----- | ------- |
-| `anki-concept-cards` | Generate flashcard JSON for the [BulkCardCreator](https://github.com/Ifiora-Timothy/BulkCardCreator-anki-addon) Anki add-on — a prose description on the front, the concept's name on the back |
-
-The craft is in the description: it has to identify one concept unambiguously
-without leaking its name, its morphological variants, its acronym expansion, or
-the eponym inside it. The skill carries the non-leakage rules, worked examples,
-and a per-card self-check.
-
-Triggers on Anki, BulkCardCreator, or any "definition on front, term on back"
-request — including a bare list of terms with "make me study cards".

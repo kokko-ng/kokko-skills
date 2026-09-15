@@ -8,6 +8,13 @@ Releases](https://github.com/kokko-ng/kokko-skills/releases) only.
 
 ## Unreleased
 
+### Removed
+
+- The kokko-learning plugin (the `anki-concept-cards` skill). The
+  marketplace drops from nine plugins to eight; installs that enabled it
+  should uninstall `kokko-learning@kokko-ng-kokko-cmds` and drop its
+  roster entry.
+
 ### Changed
 
 - Repository renamed from kokko-cmds to kokko-skills. The marketplace ID
