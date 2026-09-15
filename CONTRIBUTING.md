@@ -33,7 +33,7 @@ demand (see Local checks below).
 
 ## Versioning policy: lock-step
 
-All nine plugins share one version number. Every release bumps every
+All eight plugins share one version number. Every release bumps every
 `plugins/*/.claude-plugin/plugin.json` and every entry in
 `.claude-plugin/marketplace.json` to the same `x.y.z` together, even for
 plugins that did not change. This is deliberate: one number to reason about,
