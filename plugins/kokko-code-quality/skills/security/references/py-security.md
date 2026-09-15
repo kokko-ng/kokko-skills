@@ -62,7 +62,7 @@ uv run bandit -r <affected_path> -ll
 ## Commit Format
 
 ```text
-security(bandit): mitigate <TestID> in <symbol>
+fix(security): mitigate <TestID> in <symbol>
 ```
 
 ## Final Quality Gate

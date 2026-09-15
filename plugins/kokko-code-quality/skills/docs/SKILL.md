@@ -30,20 +30,6 @@ support it.
 
 <!-- shared:language-detection end -->
 
-## Persistence Requirement
-
-**DO NOT STOP until ALL documentation issues are resolved.** This task
-requires complete coverage:
-
-- Process every single file reported by the tools
-- Fix every missing or malformed doc comment
-- Continue working through all modules systematically
-- Re-run analysis tools after each batch of fixes
-- Only consider complete when tools report zero issues
-
-If context window limits approach, document remaining files and continue in
-next session.
-
 ## Workflow
 
 1. **Detect language** from arguments or project files

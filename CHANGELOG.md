@@ -6,7 +6,10 @@ Changelog](https://keepachangelog.com/). Releases before 3.6.0 are
 documented in [GitHub
 Releases](https://github.com/kokko-ng/kokko-cmds/releases) only.
 
-## Unreleased
+## 4.0.0 - 2026-09-15
+
+Major because the kokko-safety plugin is gone (below); installs that
+enabled it need the plugin removed from their roster.
 
 ### Removed
 
@@ -21,6 +24,32 @@ Releases](https://github.com/kokko-ng/kokko-cmds/releases) only.
   compatibility with the retired kokko-devcontainer git guard. Command
   prompts keep their own conservative git rules, now stated on their own
   merits rather than as guard behavior.
+
+### Changed
+
+- Prompt audit (`/claude-api prompt-audit`, target model Claude Fable 5.1)
+  across every command, skill, and reference file. Dated patterns removed,
+  contract disagreements between skills and their references fixed:
+  - kokko-code-quality: the `docs` skill's "do not stop" persistence block
+    and the caps-emphasis recaps in the `deadcode` and `types` skills and
+    type references are gone; reference commit formats now match their
+    SKILL.md (`fix(security):`, `refactor(complexity):`); the dead-code
+    references stage explicit paths instead of `git add .`; ESLint commands
+    drop `--ext`, which ESLint 9 flat config rejects; the mypy
+    `python_version` example is no longer pinned to 3.11; `/cruft` safety
+    rules are restated with their reasons.
+  - kokko-infra: `/az-costs` and `/az-status` confirm scope in plain
+    language, and `/az-status` honors a subscription passed as `$1`.
+  - kokko-git: `/sync` states the no-stash rule on its own merits.
+  - kokko-viz: `VERIFICATION.md` removed from the codemap output-structure
+    template, where it contradicted the no-report-file rule; the c4 skill
+    drops its migration note; `/c4-verify` runs the deterministic
+    image-pairing check as a shell snippet instead of a fifth subagent; the
+    "subagents cannot read this plugin's files" claim is corrected.
+  - kokko-validation: the templates keep the compaction and progress-file
+    facts but drop the "work persistently, do not stop" booster; the
+    aesthetics manifest no longer offers the Playwright MCP server as a
+    `BROWSER_TOOL` value.
 
 ## 3.8.0 - 2026-08-05
 

@@ -35,8 +35,11 @@ Add to ESLint config:
 
 ```bash
 # Run JSDoc analysis
-npx eslint . --ext .js,.ts,.vue --rule 'jsdoc/require-jsdoc: warn'
+npx eslint . --rule 'jsdoc/require-jsdoc: warn'
 ```
+
+ESLint 9 with flat config (`eslint.config.js`) resolves file extensions
+itself; on an eslintrc project (ESLint 8) add `--ext .js,.ts,.vue`.
 
 ## Processing Order
 
@@ -101,7 +104,7 @@ class ClassName {
 After fixing each file:
 
 ```bash
-npx eslint <file> --ext .ts,.vue
+npx eslint <file>
 ```
 
 ## Commit Format
@@ -121,5 +124,5 @@ docs(<module>): add JSDoc to <file>
 ## Final Quality Gate
 
 ```bash
-npx eslint . --ext .js,.ts,.vue
+npx eslint .
 ```

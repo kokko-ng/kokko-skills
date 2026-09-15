@@ -9,13 +9,17 @@ disable-model-invocation: true
 
 Generate a daily summary of Azure subscription activity and health. `$1` is the subscription to analyze; `--days N` sets the lookback window (default: 1). Use the chosen lookback as `<days>` in every command below.
 
-## CRITICAL — Safety
+## Confirm the scope first
 
-ALWAYS use AskUserQuestion to confirm the subscription and resource group scope before proceeding. Never assume defaults.
+Confirm the subscription (and, where relevant, the resource group scope)
+with AskUserQuestion before running any command — `az account set` below
+changes the CLI's active subscription, and the default is often not the one
+the user means. When `$1` names a subscription, confirm that one rather than
+asking the user to pick again.
 
 ## Steps
 
-1. List subscriptions and confirm target via AskUserQuestion, then set it:
+1. List subscriptions and confirm the target via AskUserQuestion, then set it:
 
 ```bash
 az account list --query "[].{Name:name, Id:id}" -o table

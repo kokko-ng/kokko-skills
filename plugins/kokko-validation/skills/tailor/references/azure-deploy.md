@@ -667,9 +667,9 @@ revisit blocked items at the end.
       `passed` in `{{PROGRESS_FILE}}`
 - [ ] `{{PROGRESS_FILE}}` is up to date with no `pending` or `in-progress` items
 
-Work autonomously and persistently toward this checklist. Do not stop because
-the task list is large or context is running low -- context is compacted
-automatically, and `{{PROGRESS_FILE}}` carries state across passes.
+Context is compacted automatically and `{{PROGRESS_FILE}}` carries state
+across passes, so neither the size of the list nor remaining context limits
+how far a pass can get. Work through the checklist until it is met.
 
 **The only valid reasons to mark an item `blocked` instead of finishing it:**
 

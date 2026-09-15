@@ -102,7 +102,7 @@ dotnet_diagnostic.CA1062.severity = warning
 
 ## Avoiding `object` and `dynamic`
 
-**CRITICAL**: Avoid `object` and `dynamic` unless absolutely necessary.
+Avoid `object` and `dynamic` unless they are genuinely unavoidable.
 
 **Instead of `object`, use:**
 
