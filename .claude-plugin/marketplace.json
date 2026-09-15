@@ -75,15 +75,6 @@
       "author": {
         "name": "kokko-ng"
       }
-    },
-    {
-      "name": "kokko-learning",
-      "source": "./plugins/kokko-learning/",
-      "description": "Study and recall aids: generate Anki flashcard JSON for the BulkCardCreator add-on, with descriptions that identify a concept without leaking its name.",
-      "version": "4.0.0",
-      "author": {
-        "name": "kokko-ng"
-      }
     }
   ]
 }
