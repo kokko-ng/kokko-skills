@@ -6,7 +6,7 @@ repo inspection, then ask the user. Never invent values.
 
   APP_NAME                    Application name
   PROGRESS_FILE               Defect ledger path, e.g. prompts/aesthetics-progress.md
-  BROWSER_TOOL                Browser automation tool actually available (e.g. playwright-cli, Playwright MCP)
+  BROWSER_TOOL                Browser automation tool: playwright-cli (the Playwright MCP server is not permitted -- see the Browser Automation section)
   FRONTEND_FRAMEWORK / FRONTEND_START_COMMAND / FRONTEND_URL
   BACKEND_FRAMEWORK / BACKEND_START_COMMAND / BACKEND_URL
   THEMES                      Theme list, e.g. "dark, light" (single-theme apps: delete the theming block)
@@ -235,9 +235,10 @@ blocked defects at the end.
 - [ ] `{{TYPE_CHECK_COMMAND}}` passes with zero errors
 - [ ] `{{PROGRESS_FILE}}` is up to date with no `open` defects or `pending` passes
 
-Work autonomously and persistently toward this checklist. Do not stop because
-the defect list is long or context is running low -- context is compacted
-automatically, and `{{PROGRESS_FILE}}` carries state across passes.
+Context is compacted automatically and `{{PROGRESS_FILE}}` carries state
+across passes, so neither the length of the defect list nor remaining
+context limits how far a pass can get. Work through the checklist until it
+is met.
 
 **The only valid reasons to mark a defect `blocked` instead of fixing it:**
 

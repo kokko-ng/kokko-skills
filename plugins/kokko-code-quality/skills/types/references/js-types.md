@@ -67,7 +67,7 @@ echo "declare module 'package-name';" > src/types/package-name.d.ts
 
 ## Avoiding `any` Types
 
-**CRITICAL**: Avoid `any` types unless absolutely necessary.
+Avoid `any` unless it is genuinely unavoidable.
 
 **Instead of `any`, use:**
 

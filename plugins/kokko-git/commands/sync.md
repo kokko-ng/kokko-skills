@@ -63,5 +63,5 @@ git push origin <branch-name> --force-with-lease
 ## Notes
 
 - Dirty working tree → commit before syncing. Do not stash to clear it: a
-  forgotten stash was load-bearing in past data-loss incidents.
+  stash is easy to forget, and work left in one is effectively lost.
 - Rebase conflicting on every commit → prefer merge instead.

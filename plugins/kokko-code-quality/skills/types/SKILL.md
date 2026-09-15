@@ -40,7 +40,8 @@ support it.
 5. **Fix each error**:
    - Update code to satisfy type checker
    - Add proper type annotations where missing
-   - Avoid `Any`/`any`/`object`/`dynamic` unless absolutely necessary
+   - Avoid `Any`/`any`/`object`/`dynamic`; where one is unavoidable, keep
+     its scope narrow and add a comment saying why
 6. **Commit incrementally**: Use message format
    `fix(types): resolve <error_code> in <file>`
 7. **Final validation**: Run type checker again to confirm zero errors
@@ -52,13 +53,6 @@ Load the appropriate reference based on detected language:
 - Python: `references/py-types.md`
 - JavaScript/TypeScript: `references/js-types.md`
 - .NET: `references/dotnet-types.md`
-
-## Critical Rules
-
-- NEVER use `Any` (Python), `any` (TypeScript), or `object`/`dynamic` (.NET)
-  without documented justification
-- Limit scope of any type-escape mechanisms
-- Add comments explaining why type-escape is unavoidable
 
 ## Success Criteria
 
