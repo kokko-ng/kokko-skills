@@ -1,7 +1,10 @@
 ---
+name: c4-verify
 description: Verify C4 diagrams against the codebase and auto-fix discrepancies.
 argument-hint: '[system-id]'
-allowed-tools: Task, Bash, Read, Write, Glob, Grep
+allowed-tools: Agent, Bash, Read, Write, Glob, Grep
+context: fork
+background: false
 ---
 
 # C4 Architecture Verification
@@ -14,12 +17,19 @@ no model exists.
 authoring rules are what this command verifies against — mandatory source-file
 hyperlinks and the ban on validation report files.
 
-Templates and schemas live at:
+TEMPLATES (paste this absolute path into every brief):
 !`echo "${CLAUDE_PLUGIN_ROOT}/skills/c4/references/c4-templates.md"`
 
-Read the relevant section whenever a check cites a `c4-templates.md#...` anchor
-(if the path above is empty, locate the file with Glob:
-`**/kokko-viz/skills/c4/references/c4-templates.md` under `~/.claude/plugins/`).
+Read the relevant section yourself whenever a check cites a
+`c4-templates.md#...` anchor.
+
+This skill runs forked: check output stays here and the caller receives the
+summary. Nobody can answer a question mid-run, so report and stop instead
+of asking. Judgment checks, synthesis, and edits are `kokko-viz:c4-mapper`
+agents (the `c4` skill preloaded, templates read from the TEMPLATES path in
+the brief); mechanical re-checks are `kokko-viz:c4-checker` agents
+(read-only, small model). Spawn both by name with the Agent tool; their
+model and effort come from their own frontmatter.
 
 ## Orchestration
 
@@ -41,8 +51,9 @@ ls codemap/
 ```
 
 - Exactly one entry → that is `SYSTEM_ID`.
-- More than one → stop and list the systems; ask which one to verify.
-  Never guess by taking the first.
+- More than one → stop and list the systems, and say the run must be
+  repeated with the system id as the argument. Never guess by taking the
+  first.
 
 ```bash
 echo "System ID: $SYSTEM_ID"
@@ -54,13 +65,11 @@ find codemap/$SYSTEM_ID -type f \
 
 ## Phase 2: Parallel Verification
 
-Checks 1-4 need judgment: launch them as four parallel subagents in a single
-message. Each is `Tool: Task`, `subagent_type: "Explore"`. Each receives
-`SYSTEM_ID` and the Phase 1 file listing, and outputs JSON with `check_type`,
-a score, `findings`,
-and `issues` (per c4-templates.md#validation-issue-schema). Subagents see
-only the prompt you give them: read that schema section yourself and paste
-it into each of the four prompts you spawn.
+Checks 1-4 need judgment: launch them as four parallel
+`kokko-viz:c4-mapper` agents in a single message. Each receives
+`SYSTEM_ID`, the Phase 1 file listing, and the TEMPLATES path, and outputs
+JSON with `check_type`, a score, `findings`, and `issues` (per
+c4-templates.md#validation-issue-schema, which the agent reads itself).
 
 **1. Completeness** (`score: X/3`): All deployable units have folders; all
 major modules documented; all integrations in context.puml.
@@ -99,21 +108,21 @@ cd - >/dev/null
 Record its output as the fifth check's findings (`missing_pngs`,
 `orphan_pngs`, `stale_pngs`).
 
-Wait for all four subagents to complete.
+Wait for all four agents to complete.
 
 ---
 
 ## Phase 3: Synthesis
 
 ```yaml
-Tool: Task
+Tool: Agent
 Parameters:
-  subagent_type: "general-purpose"
-  # synthesis wants the strongest model available: inherit the session model
-  # rather than pinning an id that goes stale
+  subagent_type: "kokko-viz:c4-mapper"
   description: "Synthesize verification"
   prompt: |
     Synthesize findings from all five verification checks.
+
+    TEMPLATES: <absolute path from above>
 
     OUTPUTS:
     - Completeness / Accuracy / Hierarchy / Diagram Quality / Image Pairing: <insert each>
@@ -149,14 +158,12 @@ Execute `correction_plan` in order.
 **4A. Structural:** `mkdir -p <paths>` for missing folders; `rm -rf <paths>`
 for orphans.
 
-**4B. Diagrams:** for each fix, spawn a focused subagent
-(`Tool: Task`, `subagent_type: "Explore"`; a mechanical rewrite — a
-smaller/faster model is fine when selectable) given the file
-path, current content, and fixes from the plan; it returns the complete
-updated file.
+**4B. Diagrams:** for each fix, spawn a `kokko-viz:c4-mapper` agent given
+the file path, current content, the TEMPLATES path, and the fixes from the
+plan; it returns the complete updated file.
 
-**4C. Documentation:** for missing docs, spawn an analysis subagent (like
-c4-map); for link fixes, edit markdown directly.
+**4C. Documentation:** for missing docs, spawn a `kokko-viz:c4-mapper`
+agent (like a c4-map phase); for link fixes, edit markdown directly.
 
 **4D. Navigation:** fix broken links and drill-down tables.
 
@@ -173,10 +180,9 @@ done
 ## Phase 5: Re-Verification
 
 ```yaml
-Tool: Task
+Tool: Agent
 Parameters:
-  subagent_type: "Explore"
-  # mechanical re-check: a smaller/faster model is fine when selectable
+  subagent_type: "kokko-viz:c4-checker"
   description: "Re-verify fixes"
   prompt: |
     Verify fixes were applied correctly.
@@ -251,6 +257,6 @@ the only file 6B–6C may touch).
 - Structural / Diagrams / Documentation / Navigation / Images: [counts]
 ```
 
-Notes: on subagent failure, continue other checks and note incomplete
+Notes: on agent failure, continue other checks and note incomplete
 verification; list irreconcilable conflicts for human decision; on fix failure,
 continue independent fixes and report partial success.
