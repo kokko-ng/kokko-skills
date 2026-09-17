@@ -1,7 +1,10 @@
 ---
+name: c4-update
 description: Update an existing C4 model to match current code changes.
 argument-hint: '[system-id]'
-allowed-tools: Task, Bash, Read, Write, Glob, Grep
+allowed-tools: Agent, Bash, Read, Write, Glob, Grep
+context: fork
+background: false
 ---
 
 # C4 Architecture Update
@@ -13,18 +16,19 @@ code changes. If no model exists, run `/kokko-viz:c4-map` first.
 holds the authoring rules every touched document must follow — mandatory
 source-file hyperlinks and the ban on validation report files.
 
-Templates and schemas live at:
+TEMPLATES (paste this absolute path into every brief):
 !`echo "${CLAUDE_PLUGIN_ROOT}/skills/c4/references/c4-templates.md"`
 
-Read the relevant section whenever a step cites a `c4-templates.md#...` anchor
-(if the path above is empty, locate the file with Glob:
-`**/kokko-viz/skills/c4/references/c4-templates.md` under `~/.claude/plugins/`).
+Read the relevant section yourself whenever a step cites a
+`c4-templates.md#...` anchor.
 
-**Subagents see only the prompt you give them** — not this command, and not
-the plugin path rendered above. When a Task prompt below cites an anchor,
-read that section yourself and paste the schema into the prompt you spawn. The Task blocks are pseudo-code — do not pin model names in them;
-inherit the session model, or use a smaller model for steps marked
-mechanical when the harness supports per-Task selection.
+This skill runs forked: phase output stays here and the caller receives the
+summary. Nobody can answer a question mid-run, so report and stop instead
+of asking. Analysis and editing phases are `kokko-viz:c4-mapper` agents
+(the `c4` skill preloaded, templates read from the TEMPLATES path in the
+brief); mechanical checks are `kokko-viz:c4-checker` agents (read-only,
+small model). Spawn both by name with the Agent tool; their model and
+effort come from their own frontmatter.
 
 ## Orchestration
 
@@ -54,8 +58,9 @@ ls codemap/
 ```
 
 - Exactly one entry → that is `SYSTEM_ID`.
-- More than one → stop and list the systems; ask which one to update.
-  Never guess by taking the first.
+- More than one → stop and list the systems, and say the run must be
+  repeated with the system id as the argument. Never guess by taking the
+  first.
 
 ```bash
 echo "System ID: $SYSTEM_ID"
@@ -72,13 +77,14 @@ git diff --name-status $LAST_UPDATE..HEAD -- . ':!codemap' ':!*.md' | head -50
 ### Step 1C: Categorize Changes
 
 ```yaml
-Tool: Task
+Tool: Agent
 Parameters:
-  subagent_type: "Explore"
+  subagent_type: "kokko-viz:c4-mapper"
   description: "Detect C4 changes"
   prompt: |
     Analyze code changes and categorize by C4 level.
 
+    TEMPLATES: <absolute path from above>
     EXISTING HIERARCHY: <from Step 1A>
     CHANGED FILES: <from Step 1B>
 
@@ -92,8 +98,7 @@ Parameters:
     {
       "SYSTEM_ID": "...",
       "CHANGE_SUMMARY": {counts by level},
-      "CHANGES": [<changes in the schema below>],
-    <paste the c4-templates.md#change-detection-schema definition here before spawning>,
+      "CHANGES": [<changes per c4-templates.md#change-detection-schema>],
       "STRUCTURAL_CHANGES": {
         "new_containers": [], "removed_containers": [],
         "new_components": [], "removed_components": [],
@@ -109,11 +114,10 @@ Wait for Phase 1. If no changes detected, report and exit.
 ## Phase 2: Impact Analysis
 
 ```yaml
-Tool: Task
+Tool: Agent
 Parameters:
-  subagent_type: "Explore"
+  subagent_type: "kokko-viz:c4-checker"
   description: "Plan C4 updates"
-  # mechanical planning step: a smaller/faster model is fine when selectable
   prompt: |
     Create update execution plan.
 
@@ -151,12 +155,14 @@ Update navigation links in parent files after deletions.
 For each modified element, spawn a level-specific subagent:
 
 ```yaml
-Tool: Task
+Tool: Agent
 Parameters:
-  subagent_type: "Explore"
+  subagent_type: "kokko-viz:c4-mapper"
   description: "Update C4 <level>"
   prompt: |
     Update <LEVEL> for modifications.
+
+    TEMPLATES: <absolute path from above>
 
     ELEMENT: <element-id>
     CURRENT STATE: <read existing .md and .puml>
@@ -188,9 +194,9 @@ mkdir -p codemap/$SYSTEM_ID/containers/<container>/components/<new-id>
 ## Phase 4: Cross-Level Consistency
 
 ```yaml
-Tool: Task
+Tool: Agent
 Parameters:
-  subagent_type: "Explore"
+  subagent_type: "kokko-viz:c4-checker"
   description: "Verify C4 consistency"
   prompt: |
     Verify cross-level consistency after updates.

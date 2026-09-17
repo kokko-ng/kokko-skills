@@ -1,7 +1,10 @@
 ---
+name: c4-map
 description: Generate a hierarchical C4 architecture map (context/containers/components) from a codebase.
 argument-hint: '[target-directory]'
-allowed-tools: Task, Bash, Read, Write, Glob, Grep
+allowed-tools: Agent, Bash, Read, Write, Glob, Grep
+context: fork
+background: false
 ---
 
 # C4 Architecture Mapping
@@ -20,41 +23,37 @@ Phase 4: Synthesis -> Phase 5: Files
 ```
 
 Each level depends on the previous. Execute sequentially, passing outputs
-forward.
+forward. This skill runs forked: the phase outputs stay in this context and
+the caller receives only the summary at the end. Nobody can answer a
+question mid-run, so report and stop instead of asking.
 
-**Subagents see only the prompt you give them** — not this command, and not
-the plugin path rendered below. Whenever a phase prompt below cites a
-`c4-templates.md#...` anchor, read that section yourself first and paste the
-schema or template into the Task prompt you spawn — a bare anchor citation
-gives the subagent nothing to follow, and phases then invent mismatched
-shapes that Phase 4 has to reconcile.
-
-The Task blocks below are pseudo-code. Do not pin model names in them —
-model ids go stale; inherit the session model unless a step is marked
-mechanical, where a smaller/faster model is fine if the harness supports
-per-Task selection.
+Every phase below is a `kokko-viz:c4-mapper` agent (spawn it by that name
+with the Agent tool). It has the `c4` skill preloaded, so it knows the
+authoring rules, and it reads the template sections a brief cites by
+itself; the brief only needs the TEMPLATES path below and the inputs from
+earlier phases. The agents' model and effort come from their own
+frontmatter, so nothing here pins a model.
 
 **Read the `c4` skill first:** `${CLAUDE_PLUGIN_ROOT}/skills/c4/SKILL.md`. It
 holds the authoring rules every generated document must follow — mandatory
 source-file hyperlinks and the ban on validation report files — and indexes the
 shared templates.
 
-Templates and schemas live at:
+TEMPLATES (paste this absolute path into every brief):
 !`echo "${CLAUDE_PLUGIN_ROOT}/skills/c4/references/c4-templates.md"`
 
-Read the relevant section of that file whenever a step below cites a
-`c4-templates.md#...` anchor (if the path above is empty, locate the file with
-Glob: `**/kokko-viz/skills/c4/references/c4-templates.md` under
-`~/.claude/plugins/`). Output structure: see `c4-templates.md#output-structure`.
+Read the relevant section of that file yourself whenever a step below cites
+a `c4-templates.md#...` anchor. Output structure: see
+`c4-templates.md#output-structure`.
 
 ---
 
 ## Phase 1: System Context
 
 ```yaml
-Tool: Task
+Tool: Agent
 Parameters:
-  subagent_type: "Explore"
+  subagent_type: "kokko-viz:c4-mapper"
   description: "Map C4 system context"
   prompt: |
     Map SYSTEM CONTEXT level (C4 Level 1).
@@ -71,8 +70,8 @@ Parameters:
     - Grep: "requests\.", "httpx\.", "import.*azure", "import.*aws"
     - Check docker-compose.yml for external services
 
-    OUTPUT: JSON matching the schema below
-    <paste the c4-templates.md#context-phase-output schema here before spawning>
+    TEMPLATES: <absolute path from above>
+    OUTPUT: JSON matching c4-templates.md#context-phase-output (read that section)
     Include C4-PlantUML context diagram
 ```
 
@@ -83,9 +82,9 @@ Wait for Phase 1. Store: `SYSTEM_ID`, `EXTERNAL_SYSTEMS`, `PRELIMINARY_CONTAINER
 ## Phase 2: Containers
 
 ```yaml
-Tool: Task
+Tool: Agent
 Parameters:
-  subagent_type: "Explore"
+  subagent_type: "kokko-viz:c4-mapper"
   description: "Map C4 containers"
   prompt: |
     Map CONTAINER level (C4 Level 2).
@@ -108,8 +107,8 @@ Parameters:
     - Grep: "FastAPI", "Express", "Flask"
     - Analyze directory structure per container
 
-    OUTPUT: JSON matching the schema below
-    <paste the c4-templates.md#container-phase-output schema here before spawning>
+    TEMPLATES: <absolute path from above>
+    OUTPUT: JSON matching c4-templates.md#container-phase-output (read that section)
     Include C4-PlantUML container diagram
 ```
 
@@ -121,9 +120,9 @@ Wait for Phase 2. Store: `CONTAINERS` (with `PRELIMINARY_COMPONENTS`),
 ## Phase 3: Components
 
 ```yaml
-Tool: Task
+Tool: Agent
 Parameters:
-  subagent_type: "Explore"
+  subagent_type: "kokko-viz:c4-mapper"
   description: "Map C4 components"
   prompt: |
     Map COMPONENT level (C4 Level 3).
@@ -144,8 +143,8 @@ Parameters:
     - Grep: "class \w+"
     - Analyze import statements
 
-    OUTPUT: JSON matching the schema below
-    <paste the c4-templates.md#component-phase-output schema here before spawning>
+    TEMPLATES: <absolute path from above>
+    OUTPUT: JSON matching c4-templates.md#component-phase-output (read that section)
     Include C4-PlantUML component diagrams (one per container)
 ```
 
@@ -156,9 +155,9 @@ Wait for Phase 3. Store: `COMPONENTS_BY_CONTAINER`.
 ## Phase 4: Synthesis
 
 ```yaml
-Tool: Task
+Tool: Agent
 Parameters:
-  subagent_type: "Explore"
+  subagent_type: "kokko-viz:c4-mapper"
   description: "Synthesize C4 model"
   prompt: |
     Validate cross-level consistency before file generation.
@@ -175,11 +174,11 @@ Parameters:
     4. Naming Conflicts: Duplicate IDs, invalid folder names
     5. Structural Issues: Empty containers, deep nesting
 
+    TEMPLATES: <absolute path from above>
     OUTPUT:
     {
       "VALIDATION_PASSED": true/false,
-      "ISSUES": [<issues in the schema below>],
-    <paste the c4-templates.md#validation-issue-schema definition here before spawning>
+      "ISSUES": [<issues per c4-templates.md#validation-issue-schema>],
       "FINAL_STRUCTURE": {corrected model}
     }
 ```

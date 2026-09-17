@@ -68,18 +68,21 @@ Read the section an instruction cites rather than the whole file:
 | `#png-generation` | PlantUML invocation |
 | `#error-handling` | Phase and validation failure responses |
 
-Inside a plugin command the file is at
-`${CLAUDE_PLUGIN_ROOT}/skills/c4/references/c4-templates.md`. If that variable
-is not set, locate it with Glob: `**/kokko-viz/skills/c4/references/c4-templates.md`
-under `~/.claude/plugins/`.
+The file lives next to this skill at
+`${CLAUDE_SKILL_DIR}/references/c4-templates.md`; the commands below pass
+its absolute path into every agent brief.
 
-## Commands
+## Commands and agents
 
-| Command | Purpose |
-| ------- | ------- |
-| `/c4-map` | Build a C4 model from scratch (context, containers, components) |
-| `/c4-update` | Bring an existing model in line with code changes |
-| `/c4-verify` | Check an existing model against the code and fix what is wrong |
+| Skill | Purpose |
+| ----- | ------- |
+| `/kokko-viz:c4-map` | Build a C4 model from scratch (context, containers, components) |
+| `/kokko-viz:c4-update` | Bring an existing model in line with code changes |
+| `/kokko-viz:c4-verify` | Check an existing model against the code and fix what is wrong |
 
-All three apply the rules above. When invoked directly rather than through a
-command, follow the same rules and the same output structure.
+All three run forked, so their phase output stays out of the caller's
+conversation, and they delegate to two plugin agents: `kokko-viz:c4-mapper`
+(analysis and edits, with this skill preloaded) and `kokko-viz:c4-checker`
+(read-only mechanical re-checks on a small model). Invoked directly rather
+than through a command, follow the same rules and the same output
+structure.
