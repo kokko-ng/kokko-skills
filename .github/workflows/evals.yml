@@ -1,0 +1,79 @@
+name: Evals
+
+# Behavioral regression suite for the skills, run with `claude plugin eval`.
+# Every run spends API credit, so this is deliberately not part of CI: it
+# runs weekly and on demand, and skips itself when the ANTHROPIC_API_KEY
+# secret is absent. Shared-infra note: .github/workflows/evals.yml in
+
+on:
+  workflow_dispatch:
+    inputs:
+      case:
+        description: "Case name glob to run (default: every case)"
+        required: false
+        default: ""
+      max_cost_usd:
+        description: "Hard cost ceiling for the whole run, in USD"
+        required: false
+        default: "10"
+  schedule:
+    - cron: "0 6 * * 1"
+
+permissions:
+  contents: read
+
+jobs:
+  evals:
+    runs-on: ubuntu-latest
+    env:
+      ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+    steps:
+      - uses: actions/checkout@v4
+      - name: Check for credentials
+        id: creds
+        run: |
+          if [ -n "$ANTHROPIC_API_KEY" ]; then
+            echo "present=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "::warning::ANTHROPIC_API_KEY is not set; skipping the eval suites"
+            echo "present=false" >> "$GITHUB_OUTPUT"
+          fi
+      - uses: actions/setup-node@v4
+        if: steps.creds.outputs.present == 'true'
+        with:
+          node-version: "22"
+      - name: Install Claude Code
+        if: steps.creds.outputs.present == 'true'
+        run: npm install -g @anthropic-ai/claude-code
+      # The check skills run Python scanners ephemerally through uvx.
+      - uses: astral-sh/setup-uv@v5
+        if: steps.creds.outputs.present == 'true'
+      - name: Run every plugin's eval suite
+        if: steps.creds.outputs.present == 'true'
+        env:
+          CASE: ${{ inputs.case }}
+          MAX_COST: ${{ inputs.max_cost_usd || '10' }}
+        run: |
+          status=0
+          for dir in plugins/*/; do
+            [ -d "$dir/evals" ] || continue
+            name=$(basename "$dir")
+            echo "::group::claude plugin eval $dir"
+            args=(--trust-plugin --scaffold --ablation none --threshold 0.8
+                  --max-cost-usd "$MAX_COST" --json "results-$name.json"
+                  --allow-tools Bash Write Edit --no-publish)
+            if [ -n "$CASE" ]; then
+              args+=(--case "$CASE")
+            fi
+            claude plugin eval "$dir" "${args[@]}" || status=1
+            echo "::endgroup::"
+          done
+          exit "$status"
+      - uses: actions/upload-artifact@v4
+        if: always() && steps.creds.outputs.present == 'true'
+        with:
+          name: eval-results
+          path: |
+            results-*.json
+            plugins/*/evals/results/**/report.html
+          if-no-files-found: ignore

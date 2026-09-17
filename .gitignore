@@ -29,3 +29,6 @@ node_modules/
 # Local scratch
 tmp/
 *.tmp
+
+# Eval runs (claude plugin eval) write reports here
+**/evals/results/
