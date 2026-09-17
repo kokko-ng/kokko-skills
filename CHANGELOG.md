@@ -6,16 +6,69 @@ Changelog](https://keepachangelog.com/). Releases before 3.6.0 are
 documented in [GitHub
 Releases](https://github.com/kokko-ng/kokko-skills/releases) only.
 
-## Unreleased
+## 5.0.0 - 2026-09-17
+
+Major because two invocations changed: `/review` is now `/audit` (the
+built-in `/review` shadowed it) and `/split` is gone (the janitor's `design`
+skill covers it with evidence and gates). Everything else is additive.
+
+### Changed
+
+- Every command is now a skill (`skills/<name>/SKILL.md`); invocation is
+  unchanged (`/name`, or `/plugin:name` on a collision). One artifact type
+  means one lint path and unlocks the fields below.
+- `/verify-docs`, `/c4-map`, `/c4-update`, and `/c4-verify` run forked
+  (`context: fork`, `background: false`): their tool output stays out of
+  the conversation and the caller receives a summary. Forked skills report
+  and stop instead of asking; the linter rejects a forked skill that
+  mentions AskUserQuestion.
+- kokko-code-quality: the six check skills share one workflow
+  (`references/check-workflow.md`) and one language-detection script
+  (`scripts/detect-langs.sh`, run through inline preprocessing); each
+  SKILL.md is now a table of deltas. Checks use the tool the repo already
+  configures, ruff's rule families when ruff is configured (`S`, `C901`,
+  `F401`/`ARG`, `D`), and otherwise run the specialist tool ephemerally
+  (`uvx bandit`, `npx --yes knip`); a check never adds a dependency to the
+  project. Every check takes `--report` (findings only, nothing edited).
+  `.kokko.json` at the repo root can pin languages, excludes, and a
+  preferred tool per check.
+- kokko-viz: two plugin agents, `c4-mapper` (the `c4` skill preloaded,
+  reads the templates itself) and `c4-checker` (read-only, small model),
+  replace the ad hoc Explore subagents and the "paste the schema before
+  spawning" instructions. Model choice lives in the agents' frontmatter as
+  aliases. The `c4` skill locates its templates through
+  `${CLAUDE_SKILL_DIR}` instead of a Glob fallback.
+- kokko-notifications: a Notification hook plays a distinct attention
+  sound on `permission_prompt`, `idle_prompt`, and `elicitation_dialog`,
+  so "finished" and "waiting on you" sound different.
+- `devcontainer-setup` and `tailor` declare `argument-hint`;
+  `devcontainer-setup` is user-invoked only.
+- README skill tables are generated from frontmatter
+  (`scripts/gen-readme-tables.sh`, checked in CI), the root README gains a
+  "Which workflow when" section, and the janitor links point at
+  kokko-janitor-skill.
+
+### Added
+
+- `scripts/lint-prompts.sh` covers skills and agents: argument-hint and
+  allowed-tools coverage on every skill, fork rules, agent `skills:`
+  references, model aliases, effort values.
+- `claude plugin eval` suites (`plugins/kokko-code-quality/evals/`,
+  `plugins/kokko-git/evals/`) with scaffold scripts, and
+  `.github/workflows/evals.yml` (weekly and on demand, gated on the
+  `ANTHROPIC_API_KEY` secret, cost-capped).
 
 ### Removed
 
+- `/review` (renamed `/audit`) and `/split`.
+- `scripts/check-skill-sync.sh`: the shared block it guarded no longer
+  exists.
 - The kokko-learning plugin (the `anki-concept-cards` skill). The
   marketplace drops from nine plugins to eight; installs that enabled it
   should uninstall `kokko-learning@kokko-ng-kokko-cmds` and drop its
   roster entry.
 
-### Changed
+### Renamed
 
 - Repository renamed from kokko-cmds to kokko-skills. The marketplace ID
   `kokko-ng-kokko-cmds` is unchanged, so installed plugins and their
