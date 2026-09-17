@@ -23,6 +23,7 @@ play_sound() {
                 success)    sound_file="/System/Library/Sounds/Glass.aiff" ;;
                 info)       sound_file="/System/Library/Sounds/Pop.aiff" ;;
                 completion) sound_file="/System/Library/Sounds/Hero.aiff" ;;
+                attention)  sound_file="/System/Library/Sounds/Ping.aiff" ;;
                 *)          sound_file="/System/Library/Sounds/Pop.aiff" ;;
             esac
             # afplay -v is a gain multiplier: 1.0 is unity. The old default of
@@ -45,6 +46,7 @@ play_sound() {
                     success)    sound_name="Exclamation" ;;
                     info)       sound_name="Question" ;;
                     completion) sound_name="Asterisk" ;;
+                    attention)  sound_name="Question" ;;
                     *)          sound_name="Asterisk" ;;
                 esac
                 powershell.exe -Command "[System.Media.SystemSounds]::${sound_name}.Play()" 2>/dev/null &
@@ -57,6 +59,7 @@ play_sound() {
                     success)    freq=660; duration=0.2 ;;
                     info)       freq=520; duration=0.15 ;;
                     completion) freq=770; duration=0.25 ;;
+                    attention)  freq=600; duration=0.35 ;;
                     *)          freq=520; duration=0.15 ;;
                 esac
 
@@ -67,6 +70,7 @@ play_sound() {
                         warning|error) sound_file="/usr/share/sounds/freedesktop/stereo/dialog-warning.oga" ;;
                         success)       sound_file="/usr/share/sounds/freedesktop/stereo/complete.oga" ;;
                         completion)    sound_file="/usr/share/sounds/freedesktop/stereo/message.oga" ;;
+                        attention)     sound_file="/usr/share/sounds/freedesktop/stereo/dialog-information.oga" ;;
                         *)             sound_file="/usr/share/sounds/freedesktop/stereo/bell.oga" ;;
                     esac
                     if [ -f "$sound_file" ]; then
@@ -97,6 +101,7 @@ play_sound() {
                 success)    sound_name="Exclamation" ;;
                 info)       sound_name="Question" ;;
                 completion) sound_name="Asterisk" ;;
+                attention)  sound_name="Question" ;;
                 *)          sound_name="Asterisk" ;;
             esac
             powershell.exe -Command "[System.Media.SystemSounds]::${sound_name}.Play()" 2>/dev/null &

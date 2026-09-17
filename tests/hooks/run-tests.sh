@@ -63,6 +63,54 @@ else
 fi
 
 # ---------------------------------------------------------------------------
+# notification.sh: quiet, zero-exit behavior on every payload shape
+# ---------------------------------------------------------------------------
+NOTIFY_HOOK="$NOTIF_HOOKS/notification.sh"
+
+run_notify() { # payload -> sets RC / OUT / ERR
+    OUT=$(printf '%s' "$1" | "$NOTIFY_HOOK" 2>"$TMPDIR_TESTS/err")
+    RC=$?
+    ERR=$(cat "$TMPDIR_TESTS/err")
+}
+
+for kind in permission_prompt idle_prompt elicitation_dialog auth_success; do
+    run_notify '{"session_id":"t","hook_event_name":"Notification","notification_type":"'"$kind"'","message":"m"}'
+    if [ "$RC" -eq 0 ] && [ -z "$OUT" ] && [ -z "$ERR" ]; then
+        record PASS "notification: $kind payload exits 0 with no output"
+    else
+        record FAIL "notification: $kind payload exits 0 with no output" "rc=$RC out=$OUT err=$ERR"
+    fi
+done
+
+run_notify 'this is not json'
+if [ "$RC" -eq 0 ] && [ -z "$ERR" ]; then
+    record PASS "notification: malformed payload does not crash"
+else
+    record FAIL "notification: malformed payload does not crash" "rc=$RC err=$ERR"
+fi
+
+# Which notification types actually play: run the hook with play_sound
+# replaced by a recorder (sourced after the real utility, so it wins).
+STUB_UTILS="$TMPDIR_TESTS/stub-utils"
+mkdir -p "$STUB_UTILS/utils"
+cp "$NOTIF_HOOKS/notification.sh" "$STUB_UTILS/notification.sh"
+# shellcheck disable=SC2016  # $1 is meant for the generated function, not this shell
+printf 'play_sound() { echo "played:$1"; }\n' > "$STUB_UTILS/utils/play-sound.sh"
+chmod +x "$STUB_UTILS/notification.sh"
+for kind in permission_prompt idle_prompt elicitation_dialog auth_success unknown_type; do
+    played=$(printf '%s' '{"notification_type":"'"$kind"'"}' | env KOKKO_SOUNDS=on "$STUB_UTILS/notification.sh" 2>/dev/null)
+    case "$kind" in
+        auth_success|unknown_type) expected="" ;;
+        *) expected="played:attention" ;;
+    esac
+    if [ "$played" = "$expected" ]; then
+        record PASS "notification: $kind -> ${expected:-silent}"
+    else
+        record FAIL "notification: $kind -> ${expected:-silent}" "got='$played'"
+    fi
+done
+
+# ---------------------------------------------------------------------------
 # play-sound.sh: must stay quiet on stderr with no usable audio backend and
 # no controlling terminal (the /dev/tty fallback path)
 # ---------------------------------------------------------------------------
@@ -76,13 +124,15 @@ if command -v setsid >/dev/null 2>&1; then
     SETSID=("$(command -v setsid)" -w)
 fi
 PLAY_SOUND="$NOTIF_HOOKS/utils/play-sound.sh"
-err=$( { env KOKKO_SOUNDS=on PATH="$FAKEBIN" "${SETSID[@]}" "$BASH" -c "source '$PLAY_SOUND'; play_sound warning" >/dev/null </dev/null; } 2>&1 )
-rc=$?
-if [ "$rc" -eq 0 ] && [ -z "$err" ]; then
-    record PASS "play-sound: no stderr noise without a TTY"
-else
-    record FAIL "play-sound: no stderr noise without a TTY" "rc=$rc stderr=$err"
-fi
+for sound in warning completion attention; do
+    err=$( { env KOKKO_SOUNDS=on PATH="$FAKEBIN" "${SETSID[@]}" "$BASH" -c "source '$PLAY_SOUND'; play_sound $sound" >/dev/null </dev/null; } 2>&1 )
+    rc=$?
+    if [ "$rc" -eq 0 ] && [ -z "$err" ]; then
+        record PASS "play-sound: $sound makes no stderr noise without a TTY"
+    else
+        record FAIL "play-sound: $sound makes no stderr noise without a TTY" "rc=$rc stderr=$err"
+    fi
+done
 
 # ---------------------------------------------------------------------------
 # Report
