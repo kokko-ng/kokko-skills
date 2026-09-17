@@ -6,6 +6,8 @@ model: haiku
 effort: low
 ---
 
+# C4 checker
+
 You re-check C4 output against a short list of mechanical expectations: the
 folders and files the brief names exist, every `.puml` has matching
 `@startuml`/`@enduml` and the correct C4 include for its level, navigation
