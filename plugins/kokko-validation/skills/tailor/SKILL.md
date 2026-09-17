@@ -1,6 +1,7 @@
 ---
 name: tailor
-description: Instantiate a generic validation/deployment master prompt for the current repo and save it to prompts/. Specify which template to tailor (local, deployed, azure-deploy, or aesthetics) plus optional hints such as the resource group or app name.
+description: Instantiate a generic validation/deployment master prompt for the current repo and save it to prompts/. Use when the user wants a local-validation, deployed-validation, azure-deploy, or aesthetics prompt tailored to this codebase.
+argument-hint: '<local|deployed|azure-deploy|aesthetics> [hints such as resource group or app name]'
 ---
 
 # Tailor Skill
