@@ -70,27 +70,6 @@ entry matches its plugin manifest (name, version, description) and that every
    fenced bash, forked skills that try to ask questions, and agent
    frontmatter. Run it before pushing.
 
-## Evals
-
-`plugins/<plugin>/evals/<case>/` holds `claude plugin eval` cases: a
-`case.yaml` (prompt, turn and time caps, graders) and a `scaffold.sh` that
-builds the throwaway git repo the case runs in (it runs in a fresh
-workspace with a temporary HOME, so it sets its own git identity). They are
-the behavioral regression net for the prompts; the mechanical linter cannot
-tell whether a rewritten skill still refuses to `git add .`.
-
-Run one plugin's suite locally (it spends API credit on your own account):
-
-```bash
-claude plugin eval plugins/kokko-git --trust-plugin --scaffold \
-  --allow-tools Bash Write Edit --no-publish --ablation none
-```
-
-`.github/workflows/evals.yml` runs every suite weekly and on demand when
-the `ANTHROPIC_API_KEY` repository secret exists, with a cost ceiling; it
-is deliberately not part of the per-PR CI. Results land under
-`evals/results/`, which is ignored.
-
 ## Release flow
 
 1. `/release` (kokko-git) bumps the version in all plugin manifests and the
@@ -119,7 +98,7 @@ claude plugin validate plugins/<name>
 ## Shared infrastructure
 
 [kokko-ng/kokko-janitor-skill](https://github.com/kokko-ng/kokko-janitor-skill)
-carries copies of the release workflow, the evals workflow, the marketplace
-sync script, the prompt linter, and the pre-commit config. This repo holds
+carries copies of the release workflow, the marketplace sync script, the
+prompt linter, and the pre-commit config. This repo holds
 the reference copies; when changing any of them, keep the two repos
 convergent.

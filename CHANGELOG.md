@@ -53,10 +53,6 @@ skill covers it with evidence and gates). Everything else is additive.
 - `scripts/lint-prompts.sh` covers skills and agents: argument-hint and
   allowed-tools coverage on every skill, fork rules, agent `skills:`
   references, model aliases, effort values.
-- `claude plugin eval` suites (`plugins/kokko-code-quality/evals/`,
-  `plugins/kokko-git/evals/`) with scaffold scripts, and
-  `.github/workflows/evals.yml` (weekly and on demand, gated on the
-  `ANTHROPIC_API_KEY` secret, cost-capped).
 
 ### Removed
 
