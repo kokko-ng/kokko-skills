@@ -21,9 +21,19 @@ defects can't be judged by assertions.
 
 ## Skills
 
+<!-- generated:skills start -->
+
 | Skill | Purpose |
 | ----- | ------- |
-| `tailor` | Instantiate a generic master prompt (local, deployed, azure-deploy, or aesthetics) for the current repo and save it to `prompts/` |
+| `/tailor <local\|deployed\|azure-deploy\|aesthetics> [hints such as resource group or app name]` | Instantiate a generic validation/deployment master prompt for the current repo and save it to prompts/ |
+
+† user-invoked only (`disable-model-invocation`) · ‡ runs forked, reports a summary
+
+<!-- generated:skills end -->
+
+Tailored prompts keep their state in `prompts/<name>-progress.md`. The
+kokko-janitor plugin's progress guard hook uses that file to keep a
+multipass run working while items are still open.
 
 ## Templates
 

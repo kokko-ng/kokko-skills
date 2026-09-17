@@ -10,21 +10,22 @@ versions.
 /plugin install kokko-env@kokko-ng-kokko-cmds
 ```
 
-## Commands
-
-| Command | Purpose |
-| ------- | ------- |
-| `/devcontainer-update` | Pull the latest `.devcontainer/` from kokko-devcontainer and apply it live, reporting what still needs a rebuild |
-| `/plugins-update` | Refresh the marketplaces, update installed plugins to the published versions, then prompt for `/reload-plugins` |
-
 ## Skills
+
+<!-- generated:skills start -->
 
 | Skill | Purpose |
 | ----- | ------- |
-| `devcontainer-setup` | Install the kokko-devcontainer starter into a directory (defaults to the current one), tailor it to that project, and bring the container up |
+| `/devcontainer-setup [target-directory] [--ref <branch-or-tag>] [--docs] [--no-up]` † | Install the kokko-ng/kokko-devcontainer starter into a directory (defaults to the current one), tailor it to that project, and bring the container up |
+| `/devcontainer-update [--check] [--ref <branch-or-tag>] [--all]` † | Refresh this project's devcontainer config from kokko-ng/kokko-devcontainer and apply it to the running container without a rebuild |
+| `/plugins-update [--check] [--all] [<plugin@marketplace> ...]` † | Update Claude Code plugins to the latest marketplace versions, then prompt to run /reload-plugins |
+
+† user-invoked only (`disable-model-invocation`) · ‡ runs forked, reports a summary
+
+<!-- generated:skills end -->
 
 `devcontainer-setup` is the first-time install and runs on the host;
 `/devcontainer-update` is the follow-up for a project that already has a
 `.devcontainer/`. It applies config by re-running the project's own
 `post-create.sh --config-only`; a `.devcontainer/` copied before that flag
-existed needs updating first — the command detects this and says so.
+existed needs updating first, and the skill detects this and says so.

@@ -1,7 +1,10 @@
 # kokko-notifications
 
-Sound notifications for Claude Code. A single Stop hook plays a completion
-chime when Claude finishes a turn, so long-running work can be left alone.
+Sound notifications for Claude Code, so long-running work can be left
+alone: a completion chime when Claude finishes a turn, and a distinct
+attention sound when Claude is waiting on you (a permission prompt, a
+question, or idle waiting for input). From another room, "finished" and
+"needs you" sound different.
 
 ```bash
 /plugin install kokko-notifications@kokko-ng-kokko-cmds
@@ -9,9 +12,10 @@ chime when Claude finishes a turn, so long-running work can be left alone.
 
 ## Hooks
 
-| Hook | Purpose |
-| ---- | ------- |
-| `stop-notification` | Plays a completion sound when Claude finishes a turn |
+| Hook | Event | Purpose |
+| ---- | ----- | ------- |
+| `stop-notification` | Stop | Plays the completion sound when Claude finishes a turn |
+| `notification` | Notification (`permission_prompt`, `idle_prompt`, `elicitation_dialog`) | Plays the attention sound when Claude needs input |
 
 ## Environment variables
 
