@@ -2,9 +2,9 @@
 
 ## Prerequisites
 
-```bash
-npm install -D knip
-```
+knip in the project's devDependencies (`npx knip`), or run it ephemerally
+without installing it: `npx --yes knip`. Use the same form in every command
+below.
 
 ## Commands
 

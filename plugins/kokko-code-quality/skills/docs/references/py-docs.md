@@ -1,10 +1,15 @@
 # Python Documentation with Interrogate and Pydocstyle
 
-## Prerequisites
+## Tool selection
 
-```bash
-uv add --dev interrogate pydocstyle
-```
+Nothing is installed into the project. In order (see the shared
+`references/check-workflow.md`):
+
+1. `[tool.ruff]` configured: `uv run ruff check --select D --config 'lint.pydocstyle.convention="google"' .`
+   reports every missing or malformed docstring (the `D` family is
+   pydocstyle) without touching the repo's ruff config.
+2. interrogate or pydocstyle already dev dependencies: `uv run <tool>`.
+3. Otherwise `uvx interrogate` and `uvx pydocstyle`, as below.
 
 ## Commands
 
@@ -12,16 +17,16 @@ uv add --dev interrogate pydocstyle
 
 ```bash
 # Check coverage with verbose output
-uv run interrogate -v <target_dir> --fail-under 100
+uvx interrogate -v <target_dir> --fail-under 100
 
 # Generate badge
-uv run interrogate <target_dir> --generate-badge /tmp/docstring-badge
+uvx interrogate <target_dir> --generate-badge /tmp/docstring-badge
 ```
 
 ### Style Check
 
 ```bash
-uv run pydocstyle <target_dir> --convention=google
+uvx pydocstyle <target_dir> --convention=google
 ```
 
 ## Key Error Codes

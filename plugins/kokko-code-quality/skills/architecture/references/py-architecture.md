@@ -1,10 +1,18 @@
 # Python Architecture Enforcement with import-linter
 
-## Prerequisites
+## Tool selection
 
-```bash
-uv add --dev import-linter
-```
+Nothing is installed into the project. In order (see the shared
+`references/check-workflow.md`):
+
+1. import-linter already a dev dependency or pre-commit hook:
+   `uv run lint-imports`.
+2. Otherwise `uvx --from import-linter lint-imports`, and for the Rich
+   workaround below, `uvx --from import-linter python - <<'PY' ... PY`
+   so `importlinter` imports from the same ephemeral environment.
+
+The contract file is this check's deliverable: creating it when none exists
+is expected, and the report says so.
 
 ## Configuration
 
@@ -38,10 +46,10 @@ names before generating config.
 
 ```bash
 # Run all contracts
-uv run lint-imports
+uvx --from import-linter lint-imports
 
 # Verbose output (shows checked imports)
-uv run lint-imports --verbose
+uvx --from import-linter lint-imports --verbose
 ```
 
 ### Rich output workaround
@@ -196,7 +204,7 @@ class EmailNotifier:
 After each fix:
 
 ```bash
-uv run lint-imports
+uvx --from import-linter lint-imports
 ```
 
 ## Commit Format
@@ -214,6 +222,6 @@ Examples:
 ## Final Quality Gate
 
 ```bash
-uv run lint-imports
-uv run pre-commit run --all-files
+uvx --from import-linter lint-imports
+uv run pre-commit run --all-files   # when the repo has a .pre-commit-config.yaml
 ```

@@ -2,11 +2,9 @@
 
 ## Prerequisites
 
-```bash
-npm install -D typescript
-```
-
-Requires `tsconfig.json` configured.
+`typescript` in the project's devDependencies and a `tsconfig.json`. A
+project without either has nothing to type-check: report that and stop
+rather than installing TypeScript into it.
 
 ## Commands
 
@@ -56,6 +54,9 @@ Ensure `tsconfig.json` includes:
 ```
 
 ## Handle Third-Party Types
+
+Missing type definitions are fixed like any other error, but they change
+the project's dependencies: name each package added in the report.
 
 ```bash
 # Install type definitions

@@ -30,11 +30,11 @@ npx eslint . --rule 'no-eval: error'
 ESLint 9 with flat config (`eslint.config.js`) resolves file extensions
 itself; on an eslintrc project (ESLint 8) add `--ext .js,.ts,.vue`.
 
-### Install Security Plugins (if missing)
+### When eslint-plugin-security is not installed
 
-```bash
-npm install -D eslint-plugin-security @typescript-eslint/eslint-plugin
-```
+Do not install it to run a check. Run `npm audit` plus ESLint's built-in
+rules (`no-eval`, `no-implied-eval`, `no-new-func`, `no-script-url`) for
+this pass, and propose the plugin in the report with the config below:
 
 ESLint config addition:
 

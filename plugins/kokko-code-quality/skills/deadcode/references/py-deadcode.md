@@ -1,22 +1,27 @@
 # Python Dead Code Detection with Vulture
 
-## Prerequisites
+## Tool selection
 
-```bash
-uv add --dev vulture
-```
+Nothing is installed into the project. In order (see the shared
+`references/check-workflow.md`):
+
+1. vulture already a dev dependency or pre-commit hook: `uv run vulture`.
+2. Otherwise `uvx vulture`, as below.
+3. `[tool.ruff]` configured: add `uv run ruff check --select F401,F841,ARG .`
+   for unused imports, locals, and arguments (ruff never finds unused
+   functions or classes, which is vulture's job).
 
 ## Commands
 
 ```bash
 # Run dead code analysis
-uv run vulture . --exclude .venv,venv,node_modules,__pycache__
+uvx vulture . --exclude .venv,venv,node_modules,__pycache__
 
 # Specific directories
-uv run vulture src/ lib/
+uvx vulture src/ lib/
 
 # With whitelist
-uv run vulture . vulture_whitelist.py --exclude .venv
+uvx vulture . vulture_whitelist.py --exclude .venv
 ```
 
 ## Verification Checklist
@@ -83,5 +88,5 @@ chore(cleanup): remove unused <function_name>
 ## Final Quality Gate
 
 ```bash
-uv run vulture . vulture_whitelist.py --exclude .venv
+uvx vulture . vulture_whitelist.py --exclude .venv
 ```

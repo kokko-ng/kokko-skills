@@ -2,9 +2,11 @@
 
 ## Prerequisites
 
-```bash
-npm install -D dependency-cruiser
-```
+dependency-cruiser in the project's devDependencies (`npx depcruise`), or
+run it ephemerally without installing it:
+`npx --yes -p dependency-cruiser depcruise`. Use the same form in every
+command below. The config file is this check's deliverable: creating it when
+none exists is expected, and the report says so.
 
 ## Configuration
 

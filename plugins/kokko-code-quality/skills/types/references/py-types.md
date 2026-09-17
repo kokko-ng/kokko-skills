@@ -1,25 +1,33 @@
 # Python Type Checking with mypy
 
-## Prerequisites
+## Tool selection
+
+Nothing is installed into the project. In order (see the shared
+`references/check-workflow.md`):
+
+1. The checker the repo configures (`[tool.mypy]` or `[tool.pyright]`,
+   a pre-commit hook, a dev dependency): `uv run mypy` or `uv run pyright`
+   with the repo's own settings.
+2. Otherwise `uvx mypy`, as below.
+
+Missing type stubs are supplied ephemerally too, never added to the
+project during a check:
 
 ```bash
-uv add --dev mypy
+uvx --with types-requests --with types-PyYAML mypy .
 ```
 
-Install type stubs as needed:
-
-```bash
-uv add --dev types-requests types-PyYAML types-redis
-```
+Propose the `types-*` packages in the report if the user wants them
+permanent.
 
 ## Commands
 
 ```bash
 # Run type check
-uv run mypy . --exclude venv --exclude .venv --exclude node_modules
+uvx mypy . --exclude venv --exclude .venv --exclude node_modules
 
 # Specific directories
-uv run mypy src/ tests/
+uvx mypy src/ tests/
 ```
 
 ## Common Errors and Fixes

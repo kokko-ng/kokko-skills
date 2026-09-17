@@ -1,64 +1,23 @@
 ---
 name: deadcode
-description: Detect and remove dead code with vulture (Python), knip (JavaScript/TypeScript), or .NET analyzers. Use when the user asks to find unused code, delete unreachable branches, or clean up unused exports, imports, or dependencies. Trigger on "dead code", "unused code", "unreachable", "vulture", or "knip"; pass py, js, or dotnet to pick the stack.
+description: Detect and remove dead code with vulture and ruff (Python), knip (JavaScript/TypeScript), or .NET analyzers. Use when the user asks to find unused code, delete unreachable branches, or clean up unused exports, imports, or dependencies. Trigger on "dead code", "unused code", "unreachable", "vulture", or "knip".
+argument-hint: '[py|js|dotnet] [--report]'
 ---
 
 # Dead Code Detection Skill
 
-Detect unused code and safely remove it using language-specific tools.
+Detect unused code and remove it safely.
 
-<!-- shared:language-detection start -- this block is byte-identical across all kokko-code-quality skills; scripts/check-skill-sync.sh enforces it -->
+Languages present: !`bash "${CLAUDE_PLUGIN_ROOT}/scripts/detect-langs.sh" "${CLAUDE_PROJECT_DIR}"`
 
-## Language Detection
+Follow `${CLAUDE_PLUGIN_ROOT}/references/check-workflow.md` (arguments,
+tool selection, run-classify-fix loop, commits, report) with these deltas:
 
-Parse `$ARGUMENTS` for an explicit language and check only that one:
-
-- `py` or `python` - Python
-- `js`, `javascript`, `typescript`, or `ts` - JavaScript/TypeScript
-- `dotnet`, `csharp`, or `cs` - .NET
-
-If no language is specified, detect every language present -- a repo can be
-more than one, and covering only the first match silently skips the rest:
-
-1. `pyproject.toml` or `setup.py` present - Python
-2. `package.json` or `tsconfig.json` present - JavaScript/TypeScript
-3. `*.csproj` or `*.sln` files present - .NET
-
-Run the full workflow once per detected language, and name every detected
-language in the report -- including any skipped because the skill does not
-support it.
-
-<!-- shared:language-detection end -->
-
-## Workflow
-
-1. **Detect language** from arguments or project files
-2. **Read reference file**: Load `references/<lang>-deadcode.md` for
-   tool-specific instructions
-3. **Run dead code analyzer** using the commands from the reference
-4. **Verify each finding** is genuinely unused — the tools report false
-   positives on anything reached dynamically:
-   - Check all internal imports/references
-   - Check dynamic/reflection usage
-   - Check framework conventions (DI, ORM, routes, fixtures)
-   - Check config-based registrations
-   - Check entry points and plugin systems
-5. **Remove only what you have verified**, one item at a time
-6. **Commit each removal separately**: Use message format
-   `chore(cleanup): remove unused <item>`
-7. **Create whitelist/suppression** for false positives with explanation
-8. **Final validation**: Run analyzer again to confirm clean
-
-## Reference Files
-
-Load the appropriate reference based on detected language:
-
-- Python: `references/py-deadcode.md`
-- JavaScript/TypeScript: `references/js-deadcode.md`
-- .NET: `references/dotnet-deadcode.md`
-
-## Success Criteria
-
-- All findings addressed (removed or whitelisted with justification)
-- Each removal has its own commit
-- No suppressions without documented justification
+| Delta | Value |
+| ----- | ----- |
+| Tools | py: `uvx vulture` for unused functions and classes, plus ruff `--select F401,F841,ARG` when ruff is configured; js: knip (`npx --yes knip` when not installed); dotnet: the analyzers the solution references |
+| Reference | `references/py-deadcode.md`, `references/js-deadcode.md`, `references/dotnet-deadcode.md` |
+| Classify | verify each finding is genuinely unused before touching it: internal references, dynamic imports and reflection, framework conventions (DI, ORM, routes, fixtures), config-based registrations, entry points, plugin systems. Confirmed unused: remove. Reached dynamically: whitelist with a written reason |
+| Priority | one finding at a time, never batched |
+| Commit | one removal per commit: `chore(cleanup): remove unused <item>` |
+| Done when | every finding removed or whitelisted with a justification; the analyzer runs clean |

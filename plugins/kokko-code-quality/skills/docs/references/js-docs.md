@@ -2,9 +2,10 @@
 
 ## Prerequisites
 
-```bash
-npm install -D eslint-plugin-jsdoc
-```
+`eslint-plugin-jsdoc` in the project's devDependencies. When it is missing,
+do not install it: audit the exported functions, classes, and methods by
+hand for this pass, and propose the plugin with the config below in the
+report.
 
 ## Configure ESLint
 
