@@ -1,22 +1,28 @@
 # Python Complexity Analysis with Radon
 
-## Prerequisites
+## Tool selection
 
-```bash
-uv add --dev radon
-```
+Nothing is installed into the project. In order (see the shared
+`references/check-workflow.md`):
+
+1. `[tool.ruff]` configured: `uv run ruff check --select C901,PLR09 .`
+   reports functions over the mccabe threshold (10) plus too many branches,
+   arguments, and statements, without touching the repo's ruff config.
+2. radon already a dev dependency: `uv run radon`.
+3. Otherwise `uvx radon`, as below. Ruff has no maintainability index, so
+   radon `mi` still runs for that signal.
 
 ## Commands
 
 ```bash
 # Cyclomatic complexity (A=best, F=worst)
-uv run radon cc -s -a . --exclude "venv/*,.venv/*"
+uvx radon cc -s -a . --exclude "venv/*,.venv/*"
 
 # Maintainability Index (100=best, 0=worst)
-uv run radon mi -s . --exclude "venv/*,.venv/*"
+uvx radon mi -s . --exclude "venv/*,.venv/*"
 
 # Halstead metrics (optional, for detailed analysis)
-uv run radon hal . --exclude "venv/*,.venv/*"
+uvx radon hal . --exclude "venv/*,.venv/*"
 ```
 
 ## Thresholds
@@ -53,8 +59,8 @@ Apply one tactic at a time:
 After each micro-change:
 
 ```bash
-uv run radon cc -s <target_file>
-uv run radon mi -s <target_file>
+uvx radon cc -s <target_file>
+uvx radon mi -s <target_file>
 ```
 
 ## Commit Format
@@ -80,7 +86,7 @@ If complexity resists decomposition:
 ## Final Quality Gate
 
 ```bash
-uv run radon cc -s -a .
-uv run radon mi -s .
-uv run pre-commit run --all-files
+uvx radon cc -s -a .
+uvx radon mi -s .
+uv run pre-commit run --all-files   # when the repo has a .pre-commit-config.yaml
 ```

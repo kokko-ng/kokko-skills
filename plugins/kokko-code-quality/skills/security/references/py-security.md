@@ -1,22 +1,27 @@
 # Python Security Analysis with Bandit
 
-## Prerequisites
+## Tool selection
 
-```bash
-uv add --dev bandit
-```
+Nothing is installed into the project. In order (see the shared
+`references/check-workflow.md`):
+
+1. `[tool.ruff]` configured: ruff's `S` family is flake8-bandit and reports
+   the same tests as `S<number>` (bandit's `B<number>`):
+   `uv run ruff check --select S .` (do not edit the repo's ruff config).
+2. bandit already a dev dependency or pre-commit hook: `uv run bandit`.
+3. Otherwise run it ephemerally: `uvx bandit`, as in the commands below.
 
 ## Commands
 
 ```bash
 # Medium and high severity only (recommended)
-uv run bandit -r . -ll --exclude .venv,venv,node_modules
+uvx bandit -r . -ll --exclude .venv,venv,node_modules
 
 # Full scan with all severities
-uv run bandit -r . -f screen --exclude .venv,venv,node_modules
+uvx bandit -r . -f screen --exclude .venv,venv,node_modules
 
 # Specific directories
-uv run bandit -r src/ lib/
+uvx bandit -r src/ lib/
 ```
 
 ## Common Issues and Fixes
@@ -56,7 +61,7 @@ password = os.environ["DB_PASSWORD"]  # nosec B105 - loaded from environment
 After each fix:
 
 ```bash
-uv run bandit -r <affected_path> -ll
+uvx bandit -r <affected_path> -ll
 ```
 
 ## Commit Format
@@ -68,6 +73,6 @@ fix(security): mitigate <TestID> in <symbol>
 ## Final Quality Gate
 
 ```bash
-uv run bandit -r . --exclude .venv,venv -ll
-uv run pre-commit run --all-files
+uvx bandit -r . --exclude .venv,venv -ll
+uv run pre-commit run --all-files   # when the repo has a .pre-commit-config.yaml
 ```

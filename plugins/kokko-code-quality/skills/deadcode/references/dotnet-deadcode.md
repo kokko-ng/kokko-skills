@@ -3,7 +3,7 @@
 ## Prerequisites
 
 - .NET SDK 6.0+
-- Roslynator.Analyzers (optional): `dotnet add package Roslynator.Analyzers`
+- Roslynator.Analyzers when the solution already references it. Adding it is a project change: propose `dotnet add package Roslynator.Analyzers` in the report instead of running it during a check
 
 ## Enable Dead Code Analyzers
 

@@ -1,72 +1,27 @@
 ---
 name: architecture
-description: Enforce architectural layering and import rules with import-linter (Python) or dependency-cruiser (JavaScript/TypeScript). Use when the user asks to enforce architecture, check layering, define import contracts, or fix dependency-direction violations. Trigger on "architecture check", "layer violations", "import rules", "import-linter", or "dependency-cruiser"; pass py or js to pick the stack.
+description: Enforce architectural layering and import rules with import-linter (Python) or dependency-cruiser (JavaScript/TypeScript). Use when the user asks to enforce architecture, check layering, define import contracts, or fix dependency-direction violations. Trigger on "architecture check", "layer violations", "import rules", "import-linter", or "dependency-cruiser".
+argument-hint: '[py|js] [--report]'
 ---
 
 # Architecture Enforcement Skill
 
-Detect and fix architectural violations -- dependency structure, coupling,
-cycles, and layering -- using language-specific architecture analyzers.
+Detect and fix architectural violations (dependency direction, coupling,
+cycles, layering) with a contract-based analyzer. Python and
+JavaScript/TypeScript only: if .NET is requested or detected, say it is not
+supported here and continue with the supported languages.
 
-<!-- shared:language-detection start -- this block is byte-identical across all kokko-code-quality skills; scripts/check-skill-sync.sh enforces it -->
+Languages present: !`bash "${CLAUDE_PLUGIN_ROOT}/scripts/detect-langs.sh" "${CLAUDE_PROJECT_DIR}"`
 
-## Language Detection
+Follow `${CLAUDE_PLUGIN_ROOT}/references/check-workflow.md` (arguments,
+tool selection, run-classify-fix loop, commits, report) with these deltas:
 
-Parse `$ARGUMENTS` for an explicit language and check only that one:
-
-- `py` or `python` - Python
-- `js`, `javascript`, `typescript`, or `ts` - JavaScript/TypeScript
-- `dotnet`, `csharp`, or `cs` - .NET
-
-If no language is specified, detect every language present -- a repo can be
-more than one, and covering only the first match silently skips the rest:
-
-1. `pyproject.toml` or `setup.py` present - Python
-2. `package.json` or `tsconfig.json` present - JavaScript/TypeScript
-3. `*.csproj` or `*.sln` files present - .NET
-
-Run the full workflow once per detected language, and name every detected
-language in the report -- including any skipped because the skill does not
-support it.
-
-<!-- shared:language-detection end -->
-
-This skill supports Python and JavaScript/TypeScript only. If .NET is
-requested or detected, say it is not supported here and continue with the
-supported languages.
-
-## Workflow
-
-1. **Detect language** from arguments or project files
-2. **Read reference file**: Load `references/<lang>-architecture.md` for
-   tool-specific instructions
-3. **Check for config**: Look for the tool's config file; create one if missing
-   using the reference's bootstrap instructions
-4. **Run architecture analyzer** using the commands from the reference. For
-   Python, use the Rich output workaround from the reference to get readable
-   output (import-linter v2.10+ renders Unicode box-drawing via Rich that is
-   unreadable in non-TTY contexts)
-5. **Parse violations** from output (cycles, forbidden imports, layer breaches)
-6. **Fix each violation**:
-   - CYCLE: Break circular dependency by extracting shared module or
-     introducing an interface
-   - FORBIDDEN_IMPORT: Move import to allowed layer or restructure module
-   - LAYER_VIOLATION: Invert dependency direction or introduce abstraction
-   - COUPLING: Extract shared types/interfaces to reduce coupling
-7. **Commit incrementally**: Use message format
-   `refactor(architecture): <description>`
-8. **Final validation**: Run architecture analyzer again to confirm zero
-   violations
-
-## Reference Files
-
-Load the appropriate reference based on detected language:
-
-- Python: `references/py-architecture.md`
-- JavaScript/TypeScript: `references/js-architecture.md`
-
-## Success Criteria
-
-- Zero architecture violations from the analyzer
-- No circular dependencies remain
-- All layer boundaries enforced
+| Delta | Value |
+| ----- | ----- |
+| Tools | py: import-linter (`uvx --from import-linter lint-imports` when not installed); js: dependency-cruiser (`npx --yes -p dependency-cruiser depcruise` when not installed) |
+| Reference | `references/py-architecture.md`, `references/js-architecture.md` |
+| Config | the contract file is the deliverable of this check: when none exists, bootstrap one from the reference after reading the real package layout, and say in the report that it was created |
+| Classify | CYCLE: extract the shared module or introduce an interface. FORBIDDEN_IMPORT: move the import to an allowed layer or restructure. LAYER_VIOLATION: invert the dependency or introduce an abstraction. COUPLING: extract shared types |
+| Priority | cycles first, then layer breaches, then forbidden imports |
+| Commit | `refactor(architecture): <description>` |
+| Done when | zero violations from the analyzer; no circular dependencies; every layer boundary enforced |

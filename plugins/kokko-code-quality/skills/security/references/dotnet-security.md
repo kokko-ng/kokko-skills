@@ -3,7 +3,7 @@
 ## Prerequisites
 
 - .NET SDK 6.0+
-- SecurityCodeScan.VS2019 analyzer (optional): `dotnet add package SecurityCodeScan.VS2019`
+- SecurityCodeScan.VS2019 analyzer when the solution already references it. Adding it is a project change: propose `dotnet add package SecurityCodeScan.VS2019` in the report instead of running it during a check
 
 ## Commands
 
