@@ -64,9 +64,3 @@ script, `scripts/detect-langs.sh`, run through inline preprocessing.
 
 The janitor (kokko-janitor-skill) runs all six in parallel git worktrees
 and merges the results.
-
-## Evals
-
-`evals/` holds `claude plugin eval` cases for the riskiest behaviors (a repo
-with findings ends clean with `fix(security)` commits; a clean repo produces
-no commits). See the repo's CONTRIBUTING for how they run.
