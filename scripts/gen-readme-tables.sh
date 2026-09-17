@@ -60,8 +60,11 @@ table() {
 render() {
   local readme="$1" plugin_dir="$2" start="$3" end='<!-- generated:skills end -->' tmp
   tmp=$(mktemp)
-  awk -v start="$start" -v end="$end" -v tbl="$(table "$plugin_dir")" '
-    index($0, start)==1 { print; print ""; print tbl; print ""; skipping=1; next }
+  # The table goes in through the environment, not -v: awk processes escape
+  # sequences in -v assignments (gawk turns the \| cell escapes into |, with
+  # a warning), while ENVIRON values arrive byte-for-byte on every awk.
+  TBL="$(table "$plugin_dir")" awk -v start="$start" -v end="$end" '
+    index($0, start)==1 { print; print ""; print ENVIRON["TBL"]; print ""; skipping=1; next }
     skipping && index($0, end)==1 { skipping=0 }
     !skipping { print }' "$readme" > "$tmp"
   if ! cmp -s "$tmp" "$readme"; then
