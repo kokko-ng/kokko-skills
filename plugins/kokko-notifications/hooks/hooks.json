@@ -1,5 +1,5 @@
 {
-  "description": "Sound notification hooks for task completion events",
+  "description": "Sound notification hooks: a completion chime when a turn ends, and a distinct attention sound when Claude is waiting on you",
   "hooks": {
     "Stop": [
       {
@@ -7,6 +7,17 @@
           {
             "type": "command",
             "command": "${CLAUDE_PLUGIN_ROOT}/hooks/stop-notification.sh"
+          }
+        ]
+      }
+    ],
+    "Notification": [
+      {
+        "matcher": "permission_prompt|idle_prompt|elicitation_dialog",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "${CLAUDE_PLUGIN_ROOT}/hooks/notification.sh"
           }
         ]
       }
