@@ -1,26 +1,35 @@
 #!/usr/bin/env bash
-# Lint the prompt files (plugin commands and skills) for the mechanical
-# defect classes that have actually shipped here:
+# Lint the prompt files (plugin skills, any legacy commands, and plugin
+# agents) for the mechanical defect classes that have actually shipped here:
 #
-#   1. Missing or incomplete frontmatter (description for commands;
-#      name + description for skills).
+#   1. Missing or incomplete frontmatter (name + description for skills and
+#      agents; description for legacy commands).
 #   2. Pseudo-placeholders. Claude Code substitutes $ARGUMENTS, $0-$9, and
-#      ${CLAUDE_*} variables in command/skill bodies -- anything else, like
-#      `$target`, is left as literal text while looking like a substitution.
-#      Rule: outside fenced code blocks, a $token starting with a lowercase
-#      letter and 2+ characters long is an error. Uppercase tokens ($UPSTREAM)
-#      and single letters ($f) are conventional shell references in prose.
-#   3. $ARGUMENTS/$N used in a command body without an argument-hint in the
-#      frontmatter, so the user never sees what the command accepts.
+#      ${CLAUDE_*} variables in skill bodies -- anything else, like `$target`,
+#      is left as literal text while looking like a substitution. Rule:
+#      outside fenced code blocks, a $token starting with a lowercase letter
+#      and 2+ characters long is an error. Uppercase tokens ($UPSTREAM) and
+#      single letters ($f) are conventional shell references in prose.
+#   3. $ARGUMENTS/$N used in a body without an argument-hint in the
+#      frontmatter, so the user never sees what the skill accepts.
 #   4. references/... or ${CLAUDE_PLUGIN_ROOT}/... paths that do not exist on
 #      disk -- a renamed reference file silently orphans every prompt that
 #      cites it.
-#   5. Fenced bash blocks a command's own allowed-tools cannot cover. A
-#      Bash(<prefix>:*) allowlist matches by command prefix, so a block
-#      whose pipeline segment starts with an assignment (VAR=...), a test
-#      construct, or an unlisted binary still triggers a permission prompt
-#      mid-command -- silently defeating the allowlist's purpose. Commands
+#   5. Fenced bash blocks a skill's own allowed-tools cannot cover. A
+#      Bash(<prefix>:*) allowlist matches by command prefix, so a block whose
+#      pipeline segment starts with an assignment (VAR=...), a test construct,
+#      or an unlisted binary still triggers a permission prompt mid-skill --
+#      silently defeating the allowlist's purpose. Skills that declare no
+#      allowed-tools (they run under the session's permissions) and skills
 #      granting bare unrestricted `Bash` are skipped.
+#   6. Forked skills (`context: fork`) that mention AskUserQuestion: a forked
+#      subagent cannot put a question to the user, so the skill would stall.
+#      A `background:` key without `context: fork` is meaningless and also
+#      flagged.
+#   7. Plugin agents: `skills:` entries must name a skill that exists (bare
+#      names resolve inside the same plugin), `model:` must be an alias
+#      (sonnet, opus, haiku, inherit -- never a dated model id, which goes
+#      stale), and `effort:` must be low, medium, or high.
 #
 # Run from the repo root: bash scripts/lint-prompts.sh
 set -euo pipefail
@@ -38,6 +47,11 @@ frontmatter() {
        fm {if ($0=="---") exit; print}' "$1"
 }
 
+# fm_value <frontmatter> <key> -> the scalar value of a top-level key
+fm_value() {
+  printf '%s\n' "$1" | sed -n "s/^$2:[[:space:]]*//p" | head -1 | sed -E "s/^['\"]//; s/['\"]\$//"
+}
+
 # pseudo_placeholders <file> -> "line:token" per finding, fences skipped
 pseudo_placeholders() {
   awk '
@@ -50,6 +64,15 @@ pseudo_placeholders() {
         s = substr(s, RSTART + RLENGTH)
       }
     }' "$1"
+}
+
+# prose_mentions <file> <regex> -> line numbers where the regex matches
+# outside fenced code blocks
+prose_mentions() {
+  awk -v re="$2" '
+    /^[[:space:]]*```/ {fence = !fence; next}
+    fence {next}
+    $0 ~ re {print FNR}' "$1"
 }
 
 # check_path_mentions <file> <plugin_dir>: every references/... and
@@ -67,6 +90,20 @@ check_path_mentions() {
       err "$file cites \${CLAUDE_PLUGIN_ROOT}/$rel but $plugin_dir/$rel does not exist"
     fi
   done < <(grep -oE '\$\{CLAUDE_PLUGIN_ROOT\}/[^[:space:]"'\''`)]+' "$file" | sort -u)
+
+  # ${CLAUDE_SKILL_DIR}/<path> mentions resolve against the skill directory
+  local skill_dir
+  skill_dir=$(dirname "$file")
+  while IFS= read -r raw; do
+    rel="${raw#\$\{CLAUDE_SKILL_DIR\}/}"
+    rel="${rel%%#*}"
+    rel="${rel%/}"
+    [ -n "$rel" ] || continue
+    case "$rel" in *'<'*|*'>'*|*'*'*) continue ;; esac
+    if [ ! -e "$skill_dir/$rel" ]; then
+      err "$file cites \${CLAUDE_SKILL_DIR}/$rel but $skill_dir/$rel does not exist"
+    fi
+  done < <(grep -oE '\$\{CLAUDE_SKILL_DIR\}/[^[:space:]"'\''`)]+' "$file" | sort -u)
 
   # bare references/... mentions may sit at the plugin root or under a skill
   while IFS= read -r raw; do
@@ -127,13 +164,16 @@ bash_block_segments() {
 }
 
 # check_allowed_tools_coverage <file>: every segment must start with an
-# allowed Bash prefix. Files granting bare `Bash` are exempt.
+# allowed Bash prefix. Files with no allowed-tools, or granting bare `Bash`,
+# are exempt.
 check_allowed_tools_coverage() {
   local file="$1" fm tools
   fm=$(frontmatter "$file")
   tools=$(printf '%s\n' "$fm" | sed -n 's/^allowed-tools:[[:space:]]*//p')
 
-  # Bare unrestricted Bash grant: nothing to check.
+  # No allowlist declared (session permissions apply) or bare unrestricted
+  # Bash grant: nothing to check.
+  [ -n "$tools" ] || return 0
   printf '%s' "$tools" | grep -qE '(^|,)[[:space:]]*Bash[[:space:]]*(,|$)' && return 0
 
   local prefixes=()
@@ -146,11 +186,11 @@ check_allowed_tools_coverage() {
     word="${seg%% *}"
     case "$word" in
       if|then|else|elif|fi|for|while|until|do|done|'case'|'esac'|'['|'[['|test|'!')
-        err "$file:$lineno bash block uses '$word' — compound/test constructs never match a Bash(<prefix>:*) allowlist, so this segment permission-prompts mid-command: $seg"
+        err "$file:$lineno bash block uses '$word' — compound/test constructs never match a Bash(<prefix>:*) allowlist, so this segment permission-prompts mid-skill: $seg"
         continue ;;
     esac
     if printf '%s' "$word" | grep -qE '^[A-Za-z_][A-Za-z_0-9]*='; then
-      err "$file:$lineno bash block starts a segment with an assignment — assignments never match a Bash(<prefix>:*) allowlist, so this segment permission-prompts mid-command: $seg"
+      err "$file:$lineno bash block starts a segment with an assignment — assignments never match a Bash(<prefix>:*) allowlist, so this segment permission-prompts mid-skill: $seg"
       continue
     fi
     ok=0
@@ -163,6 +203,70 @@ check_allowed_tools_coverage() {
       err "$file:$lineno bash block runs '$word' but allowed-tools grants no Bash prefix covering it: $seg"
     fi
   done < <(bash_block_segments "$file")
+}
+
+# --- check 6: forked skills cannot ask -------------------------------------
+
+check_fork_rules() {
+  local file="$1" fm context background
+  fm=$(frontmatter "$file")
+  context=$(fm_value "$fm" context)
+  background=$(fm_value "$fm" background)
+  if [ -n "$background" ] && [ "$context" != "fork" ]; then
+    err "$file sets background: without context: fork — the key only applies to forked skills"
+  fi
+  [ "$context" = "fork" ] || return 0
+  local line
+  while IFS= read -r line; do
+    [ -n "$line" ] || continue
+    err "$file:$line is a forked skill but mentions AskUserQuestion — a forked subagent cannot put a question to the user; report and stop instead"
+  done < <(prose_mentions "$file" 'AskUserQuestion')
+}
+
+# --- check 7: plugin agents ------------------------------------------------
+
+check_agent() {
+  local file="$1" plugin_dir="$2" fm model effort entry skill_ref target
+  fm=$(frontmatter "$file")
+  if [ -z "$fm" ]; then
+    err "$file has no frontmatter block"
+    return
+  fi
+  printf '%s\n' "$fm" | grep -q '^name:' || err "$file frontmatter has no name"
+  printf '%s\n' "$fm" | grep -q '^description:' || err "$file frontmatter has no description"
+
+  model=$(fm_value "$fm" model)
+  if [ -n "$model" ]; then
+    case "$model" in
+      sonnet|opus|haiku|inherit) ;;
+      *) err "$file pins model '$model' — use an alias (sonnet, opus, haiku, inherit); dated model ids go stale" ;;
+    esac
+  fi
+  effort=$(fm_value "$fm" effort)
+  if [ -n "$effort" ]; then
+    case "$effort" in
+      low|medium|high) ;;
+      *) err "$file sets effort '$effort' — must be low, medium, or high" ;;
+    esac
+  fi
+
+  # skills: [a, b] on one line, or a YAML list on following lines
+  while IFS= read -r entry; do
+    [ -n "$entry" ] || continue
+    skill_ref="$entry"
+    case "$skill_ref" in
+      *:*) target="plugins/${skill_ref%%:*}/skills/${skill_ref##*:}/SKILL.md" ;;
+      *)   target="$plugin_dir/skills/$skill_ref/SKILL.md" ;;
+    esac
+    if [ ! -f "$target" ]; then
+      err "$file preloads skill '$skill_ref' but $target does not exist"
+    fi
+  done < <(printf '%s\n' "$fm" | awk '
+    /^skills:[[:space:]]*\[/ { s = $0; sub(/^skills:[[:space:]]*\[/, "", s); sub(/\].*$/, "", s)
+                               n = split(s, a, ","); for (i = 1; i <= n; i++) { gsub(/[[:space:]"'\'']/, "", a[i]); if (a[i] != "") print a[i] }; next }
+    /^skills:[[:space:]]*$/   { inlist = 1; next }
+    inlist && /^[[:space:]]+-[[:space:]]*/ { s = $0; sub(/^[[:space:]]+-[[:space:]]*/, "", s); gsub(/["'\'']/, "", s); print s; next }
+    inlist { inlist = 0 }')
 }
 
 for file in plugins/*/commands/*.md plugins/*/skills/*/SKILL.md; do
@@ -185,14 +289,13 @@ for file in plugins/*/commands/*.md plugins/*/skills/*/SKILL.md; do
         err "$file frontmatter has no name"
       fi
       ;;
-    */commands/*)
-      # shellcheck disable=SC2016  # the $ is a literal to grep for, not an expansion
-      if grep -qE '\$ARGUMENTS|\$[0-9]' "$file" \
-        && ! printf '%s\n' "$fm" | grep -q '^argument-hint:'; then
-        err "$file uses \$ARGUMENTS/\$N but has no argument-hint"
-      fi
-      ;;
   esac
+
+  # shellcheck disable=SC2016  # the $ is a literal to grep for, not an expansion
+  if grep -qE '\$ARGUMENTS|\$[0-9]' "$file" \
+    && ! printf '%s\n' "$fm" | grep -q '^argument-hint:'; then
+    err "$file uses \$ARGUMENTS/\$N but has no argument-hint"
+  fi
 
   while IFS= read -r finding; do
     [ -n "$finding" ] || continue
@@ -200,13 +303,18 @@ for file in plugins/*/commands/*.md plugins/*/skills/*/SKILL.md; do
   done < <(pseudo_placeholders "$file")
 
   check_path_mentions "$file" "$plugin_dir"
+  check_allowed_tools_coverage "$file"
+  check_fork_rules "$file"
+done
 
-  case "$file" in
-    */commands/*) check_allowed_tools_coverage "$file" ;;
-  esac
+for file in plugins/*/agents/*.md; do
+  [ -f "$file" ] || continue
+  plugin_dir=$(echo "$file" | cut -d/ -f1-2)
+  check_agent "$file" "$plugin_dir"
+  check_path_mentions "$file" "$plugin_dir"
 done
 
 if [ "$FAIL" -eq 0 ]; then
-  echo "prompt lint: all command and skill files are clean"
+  echo "prompt lint: all skill, command, and agent files are clean"
 fi
 exit "$FAIL"
