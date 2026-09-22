@@ -1,7 +1,12 @@
 # C4 Architecture Templates Reference
 
-Shared templates and patterns for the `/kokko-viz:c4-map`, `/kokko-viz:c4-update`,
-and `/kokko-viz:c4-verify` commands. This is a reference file, not a command.
+Shared document templates and patterns for the `/kokko-viz:c4-map`,
+`/kokko-viz:c4-update`, and `/kokko-viz:c4-verify` commands. This is a
+reference file, not a command.
+
+Diagrams are covered by its sibling, `insight-diagrams.md`: the Insight
+design grammar, the `.c4.json` spec schema and the renderer. This file covers
+the folders, the markdown and the phase JSON.
 
 ---
 
@@ -10,21 +15,26 @@ and `/kokko-viz:c4-verify` commands. This is a reference file, not a command.
 ```text
 codemap/
 ├── README.md
+├── .insight-c4/                 # vendored renderer (not browsed)
 └── <system-id>/
-    ├── context.puml
-    ├── context.png
+    ├── context.c4.json          # the model — the source of record
+    ├── context.html             # Insight page   ┐
+    ├── context.svg              # standalone SVG ├ generated, never hand-edited
+    ├── context.png              # raster @2x     ┘
     ├── context.md
     └── containers/
         └── <container-id>/
-            ├── container.puml
-            ├── container.png
+            ├── container.c4.json
+            ├── container.{html,svg,png}
             ├── container.md
             └── components/
                 └── <component-id>/
-                    ├── component.puml
-                    ├── component.png
+                    ├── component.c4.json
+                    ├── component.{html,svg,png}
                     └── component.md
 ```
+
+There is no `.c4-plantuml/` directory and no `.puml` file. See `#rendering`.
 
 ---
 
@@ -41,7 +51,9 @@ codemap/
 
 ## Diagram
 
-![System Context](./context.png)
+[![System Context](./context.png)](./context.html)
+
+Drawn in the Insight design system from [`context.c4.json`](./context.c4.json).
 
 ## Actors
 
@@ -75,7 +87,9 @@ codemap/
 
 ## Diagram
 
-![Container](./container.png)
+[![Container](./container.png)](./container.html)
+
+Drawn in the Insight design system from [`container.c4.json`](./container.c4.json).
 
 ## Technology
 
@@ -110,7 +124,9 @@ codemap/
 
 ## Diagram
 
-![Component](./component.png)
+[![Component](./component.png)](./component.html)
+
+Drawn in the Insight design system from [`component.c4.json`](./component.c4.json).
 
 ## Responsibility
 
@@ -124,54 +140,21 @@ codemap/
 
 ---
 
-## PlantUML Reference
+## Diagrams
 
-### C4-PlantUML Library Setup
+The visual contract lives in `insight-diagrams.md`. The two things every
+phase needs from it:
 
-The C4-PlantUML library files must be stored locally in `codemap/.c4-plantuml/`:
+- **Which treatment a C4 element takes** — `insight-diagrams.md#c4-to-insight`.
+  `Person` is `input`, `System_Ext` is `external` and carries its official
+  Azure or Fabric icon, `ContainerDb` is `store`, a `Component` is `backend`
+  and carries no icon, a boundary is a zone, and exactly one node per diagram
+  is `focal`.
+- **The spec schema** — `insight-diagrams.md#spec-schema`. A phase that
+  produces a diagram produces a `<level>.c4.json`, not SVG and not PlantUML.
 
-```text
-codemap/.c4-plantuml/
-├── C4.puml
-├── C4_Context.puml
-├── C4_Container.puml
-└── C4_Component.puml
-```
-
-**Source** (copy if not already present): the plugin bundles the four files
-at `${CLAUDE_PLUGIN_ROOT}/skills/c4/assets/c4-plantuml/` — copy from there,
-no network needed. Only if the bundled copies are missing, download:
-
-- `https://raw.githubusercontent.com/plantuml-stdlib/C4-PlantUML/master/C4.puml`
-- `https://raw.githubusercontent.com/plantuml-stdlib/C4-PlantUML/master/C4_Context.puml`
-- `https://raw.githubusercontent.com/plantuml-stdlib/C4-PlantUML/master/C4_Container.puml`
-- `https://raw.githubusercontent.com/plantuml-stdlib/C4-PlantUML/master/C4_Component.puml`
-
-### Include Statements by Level
-
-All `.puml` diagrams must set `!RELATIVE_INCLUDE` and use relative paths to
-the local library:
-
-| Level | Include Statement |
-| ----- | ----------------- |
-| Context | `!include ../.c4-plantuml/C4_Context.puml` |
-| Container | `!include ../../../.c4-plantuml/C4_Container.puml` |
-| Component | `!include ../../../../../.c4-plantuml/C4_Component.puml` |
-
-**Path calculation:** Count directory levels from diagram to
-`codemap/.c4-plantuml/`:
-
-- `codemap/<system>/context.puml` -> `../.c4-plantuml/`
-- `codemap/<system>/containers/<c>/container.puml` -> `../../../.c4-plantuml/`
-- `codemap/<s>/containers/<c>/components/<x>/component.puml` -> `../../../../../.c4-plantuml/`
-
-### Valid Macros by Level
-
-| Level | Valid Macros |
-| ----- | ------------ |
-| Context | `Person()`, `System()`, `System_Ext()`, `Rel()` |
-| Container | `Container()`, `ContainerDb()`, `ContainerQueue()`, `Rel()` |
-| Component | `Component()`, `Rel()` |
+Budget per diagram: 16 nodes, 24 edges, 2 accent elements, 3 zones, arrow
+labels of 14 uppercase characters or fewer. Over 16 nodes, split the level.
 
 ---
 
@@ -338,19 +321,54 @@ default branch (`https://github.com/<owner>/<repo>/blob/<branch>/<path>#L<n>`)
 
 ---
 
-## PNG Generation
+## Rendering
+
+The renderer is vendored into the model at `codemap/.insight-c4/`, so the
+repo regenerates its own diagrams with no plugin installed:
 
 ```bash
-# Generate all PNGs (with local C4-PlantUML library)
-find codemap -name "*.puml" ! -path "*/\.c4-plantuml/*" \
-  -exec plantuml -DRELATIVE_INCLUDE="." -tpng {} \;
-
-# Generate single PNG
-plantuml -DRELATIVE_INCLUDE="." -tpng codemap/<system-id>/context.puml
+python3 codemap/.insight-c4/render.py 'codemap/**/*.c4.json' --png   # whole model
+python3 codemap/.insight-c4/render.py codemap/<system>/context.c4.json --png
+python3 codemap/.insight-c4/render.py 'codemap/**/*.c4.json' --check # checks only
 ```
 
-**Note:** The `-DRELATIVE_INCLUDE="."` flag enables local file resolution for
-C4-PlantUML includes. Exclude `.c4-plantuml/` directory from PNG generation.
+Refresh the vendored copy from the plugin whenever the plugin updates:
+
+```bash
+cp "${CLAUDE_PLUGIN_ROOT}/skills/c4/assets/insight-c4/"*.py codemap/.insight-c4/
+```
+
+The plugin copy is upstream. Fix the renderer there, never in the vendored
+copy.
+
+`--check` exits non-zero when a connector runs behind a node it does not
+terminate on or a label mask lands on a node; everything else it finds prints
+as a warning. Run it before every commit that touches a spec.
+
+PNG needs a rasteriser. The renderer tries Playwright from the repo's own
+`node_modules` first (true Inter), then `rsvg-convert`, then `magick` (both
+fall back to Arial, which is the documented system substitute). With none of
+them, the HTML and SVG are still written and the PNG step reports itself.
+
+**Staleness:** a `.html`, `.svg` or `.png` older than its `.c4.json` is stale.
+Compare commit dates rather than mtimes on a fresh clone, where checkout order
+makes everything look stale.
+
+### Migrating a PlantUML codemap
+
+An older model has `.puml` files and a `.c4-plantuml/` library. Convert it:
+
+1. Read each `.puml` and translate it to a `<level>.c4.json` — the macros map
+   one to one onto node kinds (`insight-diagrams.md#c4-to-insight`), and the
+   `Rel()` calls onto edges. The title becomes `title`; `SHOW_LEGEND()` has no
+   equivalent, the renderer always emits a legend.
+2. Assign rows. This is the one judgment call: PlantUML had no layout, so the
+   row order is new information. `insight-diagrams.md#row-design` gives the
+   convention per level.
+3. Render, check, then `rm` the `.puml` and the `.c4-plantuml/` directory.
+4. Update every `.md` diagram section and `codemap/README.md`.
+
+Do not keep both formats. Two sources of record diverge within a week.
 
 ---
 
