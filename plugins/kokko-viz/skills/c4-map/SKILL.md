@@ -42,9 +42,19 @@ shared templates.
 TEMPLATES (paste this absolute path into every brief):
 !`echo "${CLAUDE_PLUGIN_ROOT}/skills/c4/references/c4-templates.md"`
 
-Read the relevant section of that file yourself whenever a step below cites
-a `c4-templates.md#...` anchor. Output structure: see
-`c4-templates.md#output-structure`.
+DIAGRAMS (paste this one too):
+!`echo "${CLAUDE_PLUGIN_ROOT}/skills/c4/references/insight-diagrams.md"`
+
+RENDERER:
+!`echo "${CLAUDE_PLUGIN_ROOT}/skills/c4/assets/insight-c4/render.py"`
+
+Read the relevant section of those files yourself whenever a step below cites
+a `c4-templates.md#...` or `insight-diagrams.md#...` anchor. Output structure:
+see `c4-templates.md#output-structure`.
+
+Diagrams are Insight-branded and generated from JSON specs by the renderer —
+there is no PlantUML here. A phase that produces a diagram produces a
+`<level>.c4.json` per `insight-diagrams.md#spec-schema`.
 
 ---
 
@@ -71,8 +81,8 @@ Parameters:
     - Check docker-compose.yml for external services
 
     TEMPLATES: <absolute path from above>
+    DIAGRAMS: <absolute path from above>
     OUTPUT: JSON matching c4-templates.md#context-phase-output (read that section)
-    Include C4-PlantUML context diagram
 ```
 
 Wait for Phase 1. Store: `SYSTEM_ID`, `EXTERNAL_SYSTEMS`, `PRELIMINARY_CONTAINERS`.
@@ -108,8 +118,8 @@ Parameters:
     - Analyze directory structure per container
 
     TEMPLATES: <absolute path from above>
+    DIAGRAMS: <absolute path from above>
     OUTPUT: JSON matching c4-templates.md#container-phase-output (read that section)
-    Include C4-PlantUML container diagram
 ```
 
 Wait for Phase 2. Store: `CONTAINERS` (with `PRELIMINARY_COMPONENTS`),
@@ -144,8 +154,8 @@ Parameters:
     - Analyze import statements
 
     TEMPLATES: <absolute path from above>
+    DIAGRAMS: <absolute path from above>
     OUTPUT: JSON matching c4-templates.md#component-phase-output (read that section)
-    Include C4-PlantUML component diagrams (one per container)
 ```
 
 Wait for Phase 3. Store: `COMPONENTS_BY_CONTAINER`.
@@ -196,25 +206,16 @@ named in any generated `.md` must be a markdown hyperlink to the actual file,
 per `c4-templates.md#source-file-links` — repo-relative so it resolves on
 GitHub. Verify each link target exists before writing it.
 
-### Step 0: Provision the C4-PlantUML Library
-
-The four library files ship with this plugin — copy them in; no network
-access needed:
+### Step 0: Check the renderer
 
 ```bash
-mkdir -p codemap/.c4-plantuml
-cp "${CLAUDE_PLUGIN_ROOT}/skills/c4/assets/c4-plantuml/"*.puml codemap/.c4-plantuml/
+python3 "<RENDERER path from above>" --help >/dev/null && echo "renderer ok"
 ```
 
-Fallback only if the bundled copies are missing (older plugin install):
-
-```bash
-BASE_URL="https://raw.githubusercontent.com/plantuml-stdlib/C4-PlantUML/master"
-for f in C4 C4_Context C4_Container C4_Component; do
-  [ -f codemap/.c4-plantuml/$f.puml ] || \
-    curl -sL -o codemap/.c4-plantuml/$f.puml "$BASE_URL/$f.puml"
-done
-```
+Nothing to vendor: the renderer is pure standard library and finds the
+official Azure and Fabric icon packs from the `insight-diagram-design` skill
+by itself. If that skill is not installed, Azure nodes render without icons
+and the renderer says so — report it rather than substituting a glyph.
 
 ### Step 1: Create Folders
 
@@ -231,23 +232,34 @@ done
 
 ### Step 2: Write Files
 
-Use templates from the reference file's `#markdown-templates` section:
+Write the spec and the document at each level. Markdown skeletons are in
+`c4-templates.md#markdown-templates`; the spec schema and the row conventions
+are in `insight-diagrams.md#spec-schema`.
 
 | Level | Files |
 | ----- | ----- |
-| System | `context.puml`, `context.md` |
-| Container | `container.puml`, `container.md` |
-| Component | `component.puml`, `component.md` |
+| System | `context.c4.json`, `context.md` |
+| Container | `container.c4.json`, `container.md` |
+| Component | `component.c4.json`, `component.md` |
+
+Per diagram: one `focal` node (the element the diagram is about), official
+Azure or Fabric icons on every Azure or Fabric node and on nothing else,
+boundaries as zones, 16 nodes maximum. Give each node an `href` to its source
+directory or child document so the HTML page is navigable.
 
 Each markdown file must include a parent navigation link, a drill-down table
 to children, and a `<!-- Last updated: YYYY-MM-DD -->` timestamp.
 
-### Step 3: Generate PNGs
+### Step 3: Render
 
 ```bash
-find codemap -name "*.puml" ! -path "*/\.c4-plantuml/*" \
-  -exec plantuml -DRELATIVE_INCLUDE="." -tpng {} \;
+python3 "<RENDERER path from above>" 'codemap/**/*.c4.json' --png
 ```
+
+Every spec must report `ok`. A `FAIL` is a geometry problem — a connector
+behind a node, or a label mask on a node — and it is fixed by changing the
+spec (usually the row order), never by editing the output. Warnings about
+budget or a missing icon are reported to the user, not silently accepted.
 
 ### Step 4: Write README
 
@@ -274,7 +286,11 @@ find codemap -type f | sort
 - Components: Y components
 
 ## Files Created
-- Total files: N (PlantUML: X, Markdown: Y, PNG: Z)
+- Total files: N (specs: X, markdown: Y, rendered: Z)
+
+## Diagram Checks
+- Renderer: all ok / N failures
+- Warnings: [budget, missing icons, ...]
 
 ## Entry Point
 `codemap/<system-id>/context.md`

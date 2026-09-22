@@ -1,7 +1,7 @@
 {
   "name": "kokko-viz",
   "version": "5.0.0",
-  "description": "C4 architecture visualization commands for generating, updating, and verifying C4 model diagrams.",
+  "description": "C4 architecture visualization commands for generating, updating, and verifying C4 model diagrams, drawn in the Insight Enterprises design system.",
   "author": {
     "name": "kokko-ng"
   },
@@ -11,6 +11,7 @@
     "c4-model",
     "architecture",
     "visualization",
-    "diagrams"
+    "diagrams",
+    "insight"
   ]
 }

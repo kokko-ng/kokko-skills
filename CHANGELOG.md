@@ -6,6 +6,35 @@ Changelog](https://keepachangelog.com/). Releases before 3.6.0 are
 documented in [GitHub
 Releases](https://github.com/kokko-ng/kokko-skills/releases) only.
 
+## Unreleased
+
+### Changed
+
+- **kokko-viz draws in the Insight design system, and PlantUML is gone.**
+  Each C4 level is now a JSON spec you author (`context.c4.json`) rendered
+  to an Insight-branded page, SVG and PNG by
+  `plugins/kokko-viz/skills/c4/assets/insight-c4/render.py`. The renderer is
+  pure standard library (only `--png` shells out) and owns the palette, the
+  type ramp, the official Microsoft Azure and Fabric icons, the six
+  connector rules and the 4px grid, so a diagram that renders clean is on
+  brand by construction. It ships its own geometry checks (`--check`): a
+  connector behind a node it does not terminate on, or a label mask on a
+  node, fails the run.
+- The layout is deterministic, not a renderer's guess: nodes sit on ordered
+  rows and every connector runs in a *gutter* between two rows or a *side
+  lane* outside them, so "a connector never passes behind a box that is not
+  its endpoint" holds by construction. Ports on a shared edge are fanned,
+  channels are spaced, and a horizontal run crossing another route's
+  vertical gets a hop.
+- New reference `skills/c4/references/insight-diagrams.md`: which Insight
+  treatment each C4 element takes, the icon rule, the spec schema, row-design
+  conventions per level, and the one deliberate deviation from the upstream
+  diagram budget (16 nodes per level, because a context diagram that hides
+  half the external systems is wrong, not clean).
+- `/c4-verify` converts a PlantUML codemap to specs and deletes the
+  leftovers; the vendored C4-PlantUML library and its pre-commit exemption
+  are removed.
+
 ## 5.0.0 - 2026-09-17
 
 Major because two invocations changed: `/review` is now `/audit` (the
