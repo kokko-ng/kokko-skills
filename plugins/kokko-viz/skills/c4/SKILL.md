@@ -59,9 +59,11 @@ renderer bundled with this skill, from a JSON spec you author:
 ```
 
 ```bash
-python3 "${CLAUDE_PLUGIN_ROOT}/skills/c4/assets/insight-c4/render.py" \
-  'codemap/**/*.c4.json' --png
+python3 codemap/.insight-c4/render.py 'codemap/**/*.c4.json' --png
 ```
+
+The renderer is vendored into the model at `codemap/.insight-c4/` so the repo
+regenerates without this plugin; the plugin copy is upstream.
 
 **Never hand-edit a generated `.html`, `.svg` or `.png`.** Edit the spec and
 re-run; a hand edit is lost on the next run and puts the figure off brand.

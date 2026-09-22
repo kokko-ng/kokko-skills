@@ -22,8 +22,9 @@ TEMPLATES (paste this absolute path into every brief):
 DIAGRAMS (paste this one too):
 !`echo "${CLAUDE_PLUGIN_ROOT}/skills/c4/references/insight-diagrams.md"`
 
-RENDERER:
-!`echo "${CLAUDE_PLUGIN_ROOT}/skills/c4/assets/insight-c4/render.py"`
+RENDERER: the model vendors its own copy at `codemap/.insight-c4/render.py`
+(see `c4-templates.md#rendering`). Refresh it from the plugin before use:
+!`echo "cp ${CLAUDE_PLUGIN_ROOT}/skills/c4/assets/insight-c4/*.py codemap/.insight-c4/"`
 
 Read the relevant section yourself whenever a step cites a
 `c4-templates.md#...` or `insight-diagrams.md#...` anchor.
@@ -242,8 +243,8 @@ Parameters:
 3. **Re-render** every modified diagram, and check the whole model:
 
    ```bash
-   python3 "<RENDERER path from above>" codemap/$SYSTEM_ID/context.c4.json --png
-   python3 "<RENDERER path from above>" 'codemap/**/*.c4.json' --check
+   python3 codemap/.insight-c4/render.py codemap/$SYSTEM_ID/context.c4.json --png
+   python3 codemap/.insight-c4/render.py 'codemap/**/*.c4.json' --check
    ```
 
    Every spec must report `ok`. A `FAIL` is fixed in the spec, usually by

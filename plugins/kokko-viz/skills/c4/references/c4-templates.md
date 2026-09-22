@@ -15,6 +15,7 @@ the folders, the markdown and the phase JSON.
 ```text
 codemap/
 ├── README.md
+├── .insight-c4/                 # vendored renderer (not browsed)
 └── <system-id>/
     ├── context.c4.json          # the model — the source of record
     ├── context.html             # Insight page   ┐
@@ -322,13 +323,23 @@ default branch (`https://github.com/<owner>/<repo>/blob/<branch>/<path>#L<n>`)
 
 ## Rendering
 
-```bash
-R="${CLAUDE_PLUGIN_ROOT}/skills/c4/assets/insight-c4/render.py"
+The renderer is vendored into the model at `codemap/.insight-c4/`, so the
+repo regenerates its own diagrams with no plugin installed:
 
-python3 "$R" 'codemap/**/*.c4.json' --png          # whole model, HTML + SVG + PNG
-python3 "$R" codemap/<system>/context.c4.json --png # one diagram
-python3 "$R" 'codemap/**/*.c4.json' --check        # checks only, writes nothing
+```bash
+python3 codemap/.insight-c4/render.py 'codemap/**/*.c4.json' --png   # whole model
+python3 codemap/.insight-c4/render.py codemap/<system>/context.c4.json --png
+python3 codemap/.insight-c4/render.py 'codemap/**/*.c4.json' --check # checks only
 ```
+
+Refresh the vendored copy from the plugin whenever the plugin updates:
+
+```bash
+cp "${CLAUDE_PLUGIN_ROOT}/skills/c4/assets/insight-c4/"*.py codemap/.insight-c4/
+```
+
+The plugin copy is upstream. Fix the renderer there, never in the vendored
+copy.
 
 `--check` exits non-zero when a connector runs behind a node it does not
 terminate on or a label mask lands on a node; everything else it finds prints

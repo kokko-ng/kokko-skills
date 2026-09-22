@@ -23,8 +23,9 @@ TEMPLATES (paste this absolute path into every brief):
 DIAGRAMS (paste this one too):
 !`echo "${CLAUDE_PLUGIN_ROOT}/skills/c4/references/insight-diagrams.md"`
 
-RENDERER:
-!`echo "${CLAUDE_PLUGIN_ROOT}/skills/c4/assets/insight-c4/render.py"`
+RENDERER: the model vendors its own copy at `codemap/.insight-c4/render.py`
+(see `c4-templates.md#rendering`). Refresh it from the plugin before use:
+!`echo "cp ${CLAUDE_PLUGIN_ROOT}/skills/c4/assets/insight-c4/*.py codemap/.insight-c4/"`
 
 Read the relevant section yourself whenever a check cites a
 `c4-templates.md#...` or `insight-diagrams.md#...` anchor.
@@ -110,7 +111,7 @@ the most; within budget (16 nodes, 24 edges, 3 zones) and not sparse; no
 orphan nodes. Run the renderer's own checks as part of this:
 
 ```bash
-python3 "<RENDERER path from above>" 'codemap/'"$SYSTEM_ID"'/**/*.c4.json' --check
+python3 codemap/.insight-c4/render.py 'codemap/'"$SYSTEM_ID"'/**/*.c4.json' --check
 ```
 
 **5. Render Pairing** is deterministic, so run it yourself rather than
@@ -207,7 +208,7 @@ agent (like a c4-map phase); for link fixes, edit markdown directly.
 **4E. Renders:** regenerate every stale or missing output:
 
 ```bash
-python3 "<RENDERER path from above>" 'codemap/'"$SYSTEM_ID"'/**/*.c4.json' --png
+python3 codemap/.insight-c4/render.py 'codemap/'"$SYSTEM_ID"'/**/*.c4.json' --png
 ```
 
 ---
@@ -245,7 +246,7 @@ Parameters:
 **6A. Re-render the whole model, and let the renderer's checks run:**
 
 ```bash
-python3 "<RENDERER path from above>" 'codemap/**/*.c4.json' --png
+python3 codemap/.insight-c4/render.py 'codemap/**/*.c4.json' --png
 ```
 
 **6B. Report the results IN YOUR REPLY — do NOT write a verification

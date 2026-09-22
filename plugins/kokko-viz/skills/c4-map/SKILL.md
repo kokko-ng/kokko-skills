@@ -206,16 +206,26 @@ named in any generated `.md` must be a markdown hyperlink to the actual file,
 per `c4-templates.md#source-file-links` — repo-relative so it resolves on
 GitHub. Verify each link target exists before writing it.
 
-### Step 0: Check the renderer
+### Step 0: Vendor the renderer
+
+The repo must be able to regenerate its own diagrams without this plugin
+installed, so the renderer is copied in beside the model — exactly as the
+C4-PlantUML library used to be:
 
 ```bash
-python3 "<RENDERER path from above>" --help >/dev/null && echo "renderer ok"
+mkdir -p codemap/.insight-c4
+cp "${CLAUDE_PLUGIN_ROOT}/skills/c4/assets/insight-c4/"*.py codemap/.insight-c4/
+cp "${CLAUDE_PLUGIN_ROOT}/skills/c4/assets/insight-c4/README.md" codemap/.insight-c4/ 2>/dev/null || true
+python3 codemap/.insight-c4/render.py --help >/dev/null && echo "renderer ok"
 ```
 
-Nothing to vendor: the renderer is pure standard library and finds the
-official Azure and Fabric icon packs from the `insight-diagram-design` skill
-by itself. If that skill is not installed, Azure nodes render without icons
-and the renderer says so — report it rather than substituting a glyph.
+The plugin copy is upstream; the vendored copy is a build tool, not a place
+to fix things. Re-copy it whenever the plugin updates.
+
+Nothing else to provision: the renderer is pure standard library and finds
+the official Azure and Fabric icon packs from the `insight-diagram-design`
+skill by itself. If that skill is not installed, Azure nodes render without
+icons and the renderer says so — report it rather than substituting a glyph.
 
 ### Step 1: Create Folders
 
@@ -253,7 +263,7 @@ to children, and a `<!-- Last updated: YYYY-MM-DD -->` timestamp.
 ### Step 3: Render
 
 ```bash
-python3 "<RENDERER path from above>" 'codemap/**/*.c4.json' --png
+python3 codemap/.insight-c4/render.py 'codemap/**/*.c4.json' --png
 ```
 
 Every spec must report `ok`. A `FAIL` is a geometry problem — a connector
