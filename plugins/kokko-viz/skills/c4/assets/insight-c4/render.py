@@ -798,8 +798,11 @@ def main() -> int:
                 svg = svg.replace(
                     "<defs>", f"<defs><style>@import url('{fonts}');</style>", 1
                 )
+                # trailing newline: POSIX, and it keeps end-of-file-fixer style
+                # hooks from rewriting every figure on each regeneration
                 (out_dir / f"{stem}.svg").write_text(
-                    '<?xml version="1.0" encoding="UTF-8"?>\n' + svg, encoding="utf-8"
+                    '<?xml version="1.0" encoding="UTF-8"?>\n' + svg + "\n",
+                    encoding="utf-8",
                 )
             if args.png:
                 how = to_png(out_dir / f"{stem}.html", out_dir / f"{stem}.png", args.scale)
