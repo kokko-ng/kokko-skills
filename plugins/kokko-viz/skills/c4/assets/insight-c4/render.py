@@ -29,7 +29,7 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 
-from layout import Edge, Layout, Node, Zone  # noqa: E402
+from layout import Edge, Layout, Node, Zone, text_geometry  # noqa: E402
 from tokens import (  # noqa: E402
     ACCENT,
     EDGE_COLOURS,
@@ -229,6 +229,93 @@ def elbow_path(points: list[tuple[float, float]], lay: Layout, idx: int) -> str:
     return " ".join(p for p in d if p)
 
 
+def label_box(x: float, y: float, lw: float, vertical: bool, side: int = 1) -> tuple[float, float, float, float]:
+    """The mask rect a label would occupy at this point on its connector."""
+    if vertical:
+        left = x + 10 if side > 0 else x - 10 - lw
+        return (left, left + lw, y - 6, y + 6)
+    return (x - lw / 2, x + lw / 2, y - 20, y - 8)
+
+
+def _hits_stroke(box: tuple[float, float, float, float], edges: list[Edge], own: Edge) -> bool:
+    """True if any connector's stroke runs through this mask rect."""
+    x0, x1, y0, y1 = box
+    for e in edges:
+        pts = e.points
+        for k in range(1, len(pts)):
+            (ax, ay), (bx, by) = pts[k - 1], pts[k]
+            if abs(by - ay) < 0.5:  # horizontal
+                if y0 - 1 <= ay <= y1 + 1 and min(ax, bx) < x1 and max(ax, bx) > x0:
+                    return True
+            elif x0 - 1 <= ax <= x1 + 1 and min(ay, by) < y1 and max(ay, by) > y0:
+                return True
+    return False
+
+
+def place_label(
+    edge: Edge,
+    lw: float,
+    nodes: list[Node],
+    edges: list[Edge],
+    taken: list[tuple[float, float, float, float]],
+    bounds: tuple[float, float],
+) -> tuple[float, float, bool, int]:
+    """Find the point on the connector where the label reads most clearly.
+
+    Rule 2 of the connector grammar keeps a label off its own stroke and rule
+    6 keeps its mask off a node whose fill would clip it. Neither is enough on
+    a busy gutter, where a mask can land on a different connector, on another
+    label, or past the edge of the canvas. So every candidate is scored
+    against all four and the best one wins — scored rather than first-clear,
+    because on a dense diagram there may be no perfect spot and "least bad in
+    clear air" beats "the default, wherever it lands".
+    """
+    pts = edge.points
+    width, height = bounds
+    segments = []
+    for k in range(1, len(pts)):
+        (x0, y0), (x1, y1) = pts[k - 1], pts[k]
+        horizontal = abs(y1 - y0) < 0.5
+        length = abs(x1 - x0) if horizontal else abs(y1 - y0)
+        segments.append((horizontal, length, x0, y0, x1, y1))
+    # prefer a long horizontal run: a label reads best above the line
+    segments.sort(key=lambda sgm: (not sgm[0], -sgm[1]))
+
+    best: tuple[float, tuple[float, float, bool, int]] | None = None
+    for rank, (horizontal, length, x0, y0, x1, y1) in enumerate(segments):
+        if length < lw * 0.5 + 12:
+            continue
+        for t in (0.5, 0.4, 0.6, 0.3, 0.7, 0.25, 0.75):
+            px, py = x0 + (x1 - x0) * t, y0 + (y1 - y0) * t
+            for side in (1, -1) if not horizontal else (1,):
+                box = label_box(px, py, lw, not horizontal, side)
+                penalty = rank + abs(t - 0.5) * 2
+                if box[0] < 8 or box[1] > width - 8 or box[2] < 4 or box[3] > height:
+                    penalty += 1000
+                penalty += 100 * sum(
+                    1
+                    for n in nodes
+                    if box[0] < n.right + 2 and box[1] > n.x - 2
+                    and box[2] < n.bottom + 2 and box[3] > n.y - 2
+                )
+                penalty += 20 * sum(
+                    1
+                    for b in taken
+                    if box[0] < b[1] + 4 and box[1] > b[0] - 4
+                    and box[2] < b[3] + 2 and box[3] > b[2] - 2
+                )
+                if _hits_stroke(box, edges, edge):
+                    penalty += 10
+                if best is None or penalty < best[0]:
+                    best = (penalty, (px, py, not horizontal, side))
+                if penalty == rank + abs(t - 0.5) * 2:  # perfectly clear
+                    return best[1]
+    if best is not None:
+        return best[1]
+    cx, cy = edge.label_at or (0.0, 0.0)
+    return cx, cy, edge.label_vertical, 1
+
+
 # --------------------------------------------------------------------------
 # diagram
 # --------------------------------------------------------------------------
@@ -267,6 +354,8 @@ class Diagram:
         for nid, n in self.nodes.items():
             if n.kind not in TREATMENTS:
                 raise SystemExit(f"{self.slug}: node {nid!r} has unknown kind {n.kind!r}")
+        for n in self.nodes.values():
+            n.name_lines = len(wrap(n.name, n.width, self.ramp["node"]))
         self.rows = [list(r) for r in spec.get("rows", [])]
         known = {n for row in self.rows for n in row}
         missing = set(self.nodes) - known
@@ -381,25 +470,23 @@ class Diagram:
                 f'<path d="{d}" fill="none" stroke="{colour}" stroke-width="{w}"'
                 f'{dash} marker-end="url(#{marker})"/>'
             )
+        nodes = list(self.nodes.values())
+        taken: list[tuple[float, float, float, float]] = []
+        bounds = (self.width, self.height - LEGEND_H)
         for e in self.edges:  # labels after every stroke, so no stroke sits on a mask
             if not e.label or not e.label_at:
                 continue
             size = self.ramp["arrow"]
             lw = text_w(e.label, size, mono=True) + 0.06 * size * len(e.label) + 8
-            cx, cy = e.label_at
-            if e.label_vertical:
-                x = cx + 10
-                out.append(
-                    f'<rect x="{x:g}" y="{cy - 6:g}" width="{lw:g}" height="12" rx="2" fill="{PAPER}"/>'
-                    f'<text x="{x + lw / 2:g}" y="{cy + 3:g}" fill="{SOFT}" font-size="{size}" '
-                    f'font-family="{MONO}" text-anchor="middle" letter-spacing="0.06em">{esc(e.label)}</text>'
-                )
-            else:
-                out.append(
-                    f'<rect x="{cx - lw / 2:g}" y="{cy - 20:g}" width="{lw:g}" height="12" rx="2" fill="{PAPER}"/>'
-                    f'<text x="{cx:g}" y="{cy - 11:g}" fill="{SOFT}" font-size="{size}" '
-                    f'font-family="{MONO}" text-anchor="middle" letter-spacing="0.06em">{esc(e.label)}</text>'
-                )
+            cx, cy, vertical, side = place_label(e, lw, nodes, self.edges, taken, bounds)
+            bx = label_box(cx, cy, lw, vertical, side)
+            taken.append(bx)
+            ty = cy + 3 if vertical else cy - 11
+            out.append(
+                f'<rect x="{bx[0]:g}" y="{bx[2]:g}" width="{lw:g}" height="12" rx="2" fill="{PAPER}"/>'
+                f'<text x="{(bx[0] + bx[1]) / 2:g}" y="{ty:g}" fill="{SOFT}" font-size="{size}" '
+                f'font-family="{MONO}" text-anchor="middle" letter-spacing="0.06em">{esc(e.label)}</text>'
+            )
         return out
 
     def _nodes(self) -> list[str]:
@@ -425,22 +512,19 @@ class Diagram:
             icon_sz = self.ramp["icon"]
             name_size = self.ramp["node"]
             lines = wrap(n.name, n.width, name_size)
+            name_ys, sub_y, _ = text_geometry(n, self.ramp)
             if n.icon:
                 body.append(self.icons.inline(n.icon, n.cx - icon_sz / 2, n.y + 16, icon_sz))
-                base = n.y + (62 if icon_sz == 24 else 72)
-            else:
-                block = len(lines) * (name_size + 4) + (12 if n.sublabel else 0)
-                base = n.cy - block / 2 + name_size + 2
             for k, line in enumerate(lines):
                 body.append(
-                    f'<text x="{n.cx:g}" y="{base + k * (name_size + 4):g}" fill="{textc}" '
+                    f'<text x="{n.cx:g}" y="{n.y + name_ys[k]:g}" fill="{textc}" '
                     f'font-size="{name_size}" font-weight="600" font-family="{SANS}" '
                     f'text-anchor="middle">{esc(line)}</text>'
                 )
-            if n.sublabel:
-                sy = base + (len(lines) - 1) * (name_size + 4) + 16
+            if n.sublabel and sub_y is not None:
                 body.append(
-                    f'<text x="{n.cx:g}" y="{sy:g}" fill="{MUTED}" font-size="{self.ramp["sublabel"]}" '
+                    f'<text x="{n.cx:g}" y="{n.y + sub_y:g}" fill="{MUTED}" '
+                    f'font-size="{self.ramp["sublabel"]}" '
                     f'font-family="{MONO}" text-anchor="middle">{esc(n.sublabel)}</text>'
                 )
             inner = "".join(body)
@@ -568,6 +652,25 @@ def check(d: Diagram) -> list[str]:
         for v, what in ((n.x, "x"), (n.y, "y"), (n.width, "width"), (n.height, "height")):
             if v % 4:
                 issues.append(f"node {n.id}: {what}={v} is off the 4px grid")
+    # text must stay inside its box, with air under the last baseline
+    for n in d.nodes.values():
+        name_ys, sub_y, _ = text_geometry(n, d.ramp)
+        last = sub_y if sub_y is not None else name_ys[-1]
+        if last + 6 > n.height:
+            issues.append(
+                f"node {n.id}: text reaches {last + 6:g} of a {n.height} box - no bottom margin"
+            )
+        if name_ys[0] - d.ramp["node"] < 4:
+            issues.append(f"node {n.id}: first name line sits on the top edge")
+        widest = max(
+            [text_w(line, d.ramp["node"]) for line in wrap(n.name, n.width, d.ramp["node"])]
+            + [text_w(n.sublabel, d.ramp["sublabel"], mono=True)]
+        )
+        if widest > n.width - 16:
+            issues.append(
+                f"node {n.id}: text is {widest:.0f}px wide in a {n.width}px box - widen it"
+            )
+
     # a connector must not cross a node it does not terminate on
     for i, e in enumerate(d.edges):
         pts = e.points
@@ -583,15 +686,20 @@ def check(d: Diagram) -> list[str]:
                 elif n.x + 1 < x0 < n.right - 1 and min(y0, y1) < n.bottom - 1 and max(y0, y1) > n.y + 1:
                     issues.append(f"edge {e.src}->{e.dst} runs behind node {n.id}")
     # a label mask must not land on a node
+    nodes = list(d.nodes.values())
+    taken: list[tuple[float, float, float, float]] = []
+    bounds = (d.width, d.height - LEGEND_H)
     for e in d.edges:
         if not e.label or not e.label_at:
             continue
-        cx, cy = e.label_at
-        lw = text_w(e.label, d.ramp["arrow"], mono=True) + 8
-        bx = (cx + 10, cx + 10 + lw, cy - 6, cy + 6) if e.label_vertical else (
-            cx - lw / 2, cx + lw / 2, cy - 20, cy - 8
-        )
-        for n in d.nodes.values():
+        size = d.ramp["arrow"]
+        lw = text_w(e.label, size, mono=True) + 0.06 * size * len(e.label) + 8
+        cx, cy, vertical, side = place_label(e, lw, nodes, d.edges, taken, bounds)
+        bx = label_box(cx, cy, lw, vertical, side)
+        taken.append(bx)
+        if bx[0] < 8 or bx[1] > d.width - 8:
+            issues.append(f"label {e.label!r} on {e.src}->{e.dst} runs off the canvas")
+        for n in nodes:
             if bx[0] < n.right and bx[1] > n.x and bx[2] < n.bottom and bx[3] > n.y:
                 issues.append(f"label {e.label!r} on {e.src}->{e.dst} overlaps node {n.id}")
                 break

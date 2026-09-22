@@ -40,6 +40,37 @@ MIN_EDGE_GUTTER = 48  # the headroom gutter and the one below the last row
 BOTTOM_PAD = 32  # clear air under the last row, so a zone never meets the legend
 MIN_DX = 20  # below this a zigzag cannot hold two r=8 arcs; straighten instead
 PORT_MIN_INSET = 12  # ports never sit within this of a corner
+TEXT_PAD = 14  # clear air under the last baseline, for descenders
+BOX_PAD = 12  # minimum air above and below a centred text block
+
+
+def text_geometry(node: "Node", ramp: dict) -> tuple[list[float], float | None, int]:
+    """Baselines for a node's name and sublabel, and the height it needs.
+
+    One function so the height the row is sized to and the y the text is drawn
+    at can never disagree. They did: the icon ramp hard-codes the baselines
+    for a ONE-line name, so a name that wrapped pushed the sublabel through
+    the bottom edge of the box.
+
+    Returns (name baselines, sublabel baseline or None, required height), all
+    relative to the node's top edge.
+    """
+    size = ramp["node"]
+    step = size + 4
+    if node.icon:
+        # The insight-diagram-design ramp fixes the first baseline relative to
+        # the icon; extra name lines and the sublabel follow it downwards.
+        first = 62 if ramp["icon"] == 24 else 72
+        names = [first + k * step for k in range(node.name_lines)]
+        sub = names[-1] + 16 if node.sublabel else None
+        needed = (sub if sub is not None else names[-1]) + TEXT_PAD
+        return names, sub, max(ramp["icon_node_h"], needed)
+    block = node.name_lines * step + (16 if node.sublabel else 0)
+    height = max(ramp["node_h"], block + 2 * BOX_PAD)
+    first = (height - block) / 2 + size
+    names = [first + k * step for k in range(node.name_lines)]
+    sub = names[-1] + 16 if node.sublabel else None
+    return names, sub, height
 
 
 @dataclass
@@ -52,6 +83,7 @@ class Node:
     icon: str = ""
     href: str = ""
     width: int = NODE_W
+    name_lines: int = 1  # set by the caller once the name has been wrapped
     # filled in by layout
     x: int = 0
     y: int = 0
@@ -159,8 +191,9 @@ class Layout:
             for nid in ids:
                 self.nodes[nid].row = r
         for r, ids in enumerate(self.rows):
-            has_icon = any(self.nodes[i].icon for i in ids)
-            h = self.ramp["icon_node_h"] if has_icon else self.ramp["node_h"]
+            # Every node in a row shares one height, per the design system, so
+            # the row takes the tallest node's requirement.
+            h = snap(max(text_geometry(self.nodes[i], self.ramp)[2] for i in ids))
             for nid in ids:
                 self.nodes[nid].height = h
             self.row_h.append(h)
