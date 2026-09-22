@@ -324,3 +324,9 @@ Run these by eye on the rendered PNG before calling a diagram done:
   lane routes?
 - Is the `desc` a sentence a person who cannot see the image would find
   useful, or is it a restatement of the title?
+- **Is the page full of hops?** A hop is the renderer being honest about a
+  crossing it could not avoid, and a fan of eight edges out of one node
+  crosses everything by geometry, not by a routing mistake. The fix is
+  editorial: merge the parallel relationships into one labelled edge and put
+  the breakdown in the markdown table. A component diagram is usually better
+  at eight edges than at seventeen.

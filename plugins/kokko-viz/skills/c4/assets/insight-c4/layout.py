@@ -129,6 +129,7 @@ class Layout:
         # gutter index -> ordered list of edge indexes occupying a channel
         self._gutter_edges: dict[int, list[int]] = {}
         self._channel_of: dict[tuple[int, int], int] = {}
+        self._gutter_depth: dict[int, int] = {}
         self._lane_of: dict[int, tuple[str, int]] = {}
         self._lanes: dict[str, int] = {"left": 0, "right": 0}
         self._ports: dict[tuple[str, str, int], float] = {}
@@ -137,11 +138,15 @@ class Layout:
     # -- public ----------------------------------------------------------
 
     def run(self) -> None:
+        # x is independent of gutter heights and channel assignment needs x,
+        # so the horizontal pass runs first and the vertical one second.
         self._index_rows()
         self._classify_edges()
-        self._size_gutters()
-        self._place_rows()
         self._assign_lanes()
+        self._place_x()
+        self._assign_channels()
+        self._size_gutters()
+        self._place_y()
         self._assign_ports()
         self._route()
         self._place_zones()
@@ -166,7 +171,7 @@ class Layout:
             return 0
         return sum(self.nodes[i].width for i in ids) + NODE_GAP * (len(ids) - 1)
 
-    def _place_rows(self) -> None:
+    def _place_x(self) -> None:
         content_w = max([self._row_width(r) for r in range(len(self.rows))] + [0])
         lane_w = (self._lanes["left"] + self._lanes["right"]) * CHANNEL_STEP
         if lane_w:
@@ -176,18 +181,21 @@ class Layout:
         right_pad = self._lanes["right"] * CHANNEL_STEP + (CHANNEL_INSET if self._lanes["right"] else 0)
         band_l = MARGIN + left_pad
         band_r = self.width - MARGIN - right_pad
-
-        y = MARGIN
         for r in range(len(self.rows)):
-            y += self.gutter_h[r]
-            self.gutter_y.append(y - self.gutter_h[r])
-            self.row_y.append(snap(y))
-            row_w = self._row_width(r)
-            x = snap(band_l + (band_r - band_l - row_w) / 2)
+            x = snap(band_l + (band_r - band_l - self._row_width(r)) / 2)
             for nid in self.rows[r]:
                 n = self.nodes[nid]
-                n.x, n.y = x, snap(y)
+                n.x = x
                 x += n.width + NODE_GAP
+
+    def _place_y(self) -> None:
+        y = MARGIN
+        for r in range(len(self.rows)):
+            self.gutter_y.append(y)
+            y = snap(y + self.gutter_h[r])
+            self.row_y.append(y)
+            for nid in self.rows[r]:
+                self.nodes[nid].y = y
             y = snap(y + self.row_h[r])
         self.gutter_y.append(y)
 
@@ -219,19 +227,48 @@ class Layout:
                 g_dst = b.row if dr > 0 else b.row + 1
                 self._gutter_edges.setdefault(g_src, []).append(i)
                 self._gutter_edges.setdefault(g_dst, []).append(i)
-        # channel order inside a gutter: shortest horizontal span nearest the top
+    def _assign_channels(self) -> None:
+        """Pack each gutter's horizontal runs into as few channels as fit.
+
+        Two runs that do not overlap horizontally can share one channel, so a
+        gutter carrying eight edges is usually two or three channels deep, not
+        eight. Within a channel the runs keep 2*ELBOW_R of clear air, which is
+        what stops two arcs meeting at a point.
+        """
         for g, idxs in self._gutter_edges.items():
             ordered = sorted(
                 dict.fromkeys(idxs),
                 key=lambda i: (
                     self.edges[i].shape == "u",
-                    abs(self.nodes[self.edges[i].src].cx - self.nodes[self.edges[i].dst].cx),
+                    abs(self._run_x(i)[0] - self._run_x(i)[1]),
                     i,
                 ),
             )
             self._gutter_edges[g] = ordered
-            for k, i in enumerate(ordered):
-                self._channel_of[(g, i)] = k
+            occupied: list[list[tuple[float, float]]] = []
+            for i in ordered:
+                lo, hi = sorted(self._run_x(i))
+                lo, hi = lo - 2 * ELBOW_R, hi + 2 * ELBOW_R
+                for k, spans in enumerate(occupied):
+                    if all(hi <= a or lo >= b for a, b in spans):
+                        spans.append((lo, hi))
+                        self._channel_of[(g, i)] = k
+                        break
+                else:
+                    occupied.append([(lo, hi)])
+                    self._channel_of[(g, i)] = len(occupied) - 1
+            self._gutter_depth[g] = len(occupied)
+
+    def _run_x(self, i: int) -> tuple[float, float]:
+        """The x extent of edge ``i``'s horizontal run, from node centres."""
+        e = self.edges[i]
+        a, b = self.nodes[e.src], self.nodes[e.dst]
+        if e.shape == "lane":
+            side, k = self._lane_of[i]
+            lx = MARGIN + CHANNEL_INSET + k * CHANNEL_STEP if side == "left" else \
+                self.width - MARGIN - CHANNEL_INSET - k * CHANNEL_STEP
+            return (min(a.cx, b.cx, lx), max(a.cx, b.cx, lx))
+        return (a.cx, b.cx)
 
     def _zone_top_rows(self) -> set[int]:
         out = set()
@@ -248,7 +285,7 @@ class Layout:
         # label then sit in clear air instead of under a connector.
         zone_tops = self._zone_top_rows()
         for g in range(n_rows + 1):
-            c = len(self._gutter_edges.get(g, []))
+            c = self._gutter_depth.get(g, 0)
             if 0 < g < n_rows:
                 floor = MIN_GUTTER
             elif g == n_rows:
