@@ -188,7 +188,7 @@ the `c4` authoring rules preloaded. See
 | `/c4-map [target-directory]` ‡ | Generate a hierarchical C4 architecture map (context/containers/components) from a codebase |
 | `/c4-update [system-id]` ‡ | Update an existing C4 model to match current code changes |
 | `/c4-verify [system-id]` ‡ | Verify C4 diagrams against the codebase and auto-fix discrepancies |
-| `/c4` | Authoring rules and shared templates for C4 architecture and codemap documents - mandatory source-file hyperlinks, no validation report files, template and diagram conventions |
+| `/c4` | Authoring rules and shared templates for C4 architecture and codemap documents - Insight-branded diagrams rendered from JSON specs, mandatory source-file hyperlinks, no validation report files, template and diagram conventions |
 
 † user-invoked only (`disable-model-invocation`) · ‡ runs forked, reports a summary
 

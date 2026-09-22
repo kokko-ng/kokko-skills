@@ -19,8 +19,20 @@ source-file hyperlinks and the ban on validation report files.
 TEMPLATES (paste this absolute path into every brief):
 !`echo "${CLAUDE_PLUGIN_ROOT}/skills/c4/references/c4-templates.md"`
 
+DIAGRAMS (paste this one too):
+!`echo "${CLAUDE_PLUGIN_ROOT}/skills/c4/references/insight-diagrams.md"`
+
+RENDERER: the model vendors its own copy at `codemap/.insight-c4/render.py`
+(see `c4-templates.md#rendering`). Refresh it from the plugin before use:
+!`echo "cp ${CLAUDE_PLUGIN_ROOT}/skills/c4/assets/insight-c4/*.py codemap/.insight-c4/"`
+
 Read the relevant section yourself whenever a step cites a
-`c4-templates.md#...` anchor.
+`c4-templates.md#...` or `insight-diagrams.md#...` anchor.
+
+Diagrams are Insight-branded and generated from `<level>.c4.json` specs by
+the renderer. Edit the spec, never the `.html`, `.svg` or `.png`. If the
+model still holds `.puml` files, this run converts them — see
+`c4-templates.md#migrating-a-plantuml-codemap` — and deletes them.
 
 This skill runs forked: phase output stays here and the caller receives the
 summary. Nobody can answer a question mid-run, so report and stop instead
@@ -64,7 +76,7 @@ ls codemap/
 
 ```bash
 echo "System ID: $SYSTEM_ID"
-find codemap/$SYSTEM_ID -type f \( -name "*.md" -o -name "*.puml" \) | sort
+find codemap/$SYSTEM_ID -type f \( -name "*.md" -o -name "*.c4.json" -o -name "*.puml" \) | sort
 ```
 
 ### Step 1B: Analyze Changes
@@ -163,9 +175,10 @@ Parameters:
     Update <LEVEL> for modifications.
 
     TEMPLATES: <absolute path from above>
+    DIAGRAMS: <absolute path from above>
 
     ELEMENT: <element-id>
-    CURRENT STATE: <read existing .md and .puml>
+    CURRENT STATE: <read existing .md and .c4.json>
     MODIFICATIONS: <changes from Phase 1>
 
     GOALS:
@@ -174,7 +187,9 @@ Parameters:
     - Update navigation if children added/removed
     - Ensure parent links correct
 
-    OUTPUT: Full updated files (puml and md)
+    OUTPUT: Full updated files (the .c4.json spec and the .md). Keep the
+    existing row assignment unless the change makes it wrong; a stable row
+    order keeps the diff on the diagram readable.
 ```
 
 ### Step 3C: Additions (Top-Down)
@@ -225,12 +240,15 @@ Parameters:
    add missing entries.
 2. **Update timestamps:** Update `<!-- Last updated: YYYY-MM-DD -->` in
    modified files.
-3. **Regenerate PNGs** for modified diagrams:
+3. **Re-render** every modified diagram, and check the whole model:
 
    ```bash
-   plantuml -DRELATIVE_INCLUDE="." -tpng codemap/$SYSTEM_ID/context.puml
-   plantuml -DRELATIVE_INCLUDE="." -tpng codemap/$SYSTEM_ID/containers/<id>/container.puml
+   python3 codemap/.insight-c4/render.py codemap/$SYSTEM_ID/context.c4.json --png
+   python3 codemap/.insight-c4/render.py 'codemap/**/*.c4.json' --check
    ```
+
+   Every spec must report `ok`. A `FAIL` is fixed in the spec, usually by
+   reordering rows, never by editing the rendered output.
 
 4. **Update README:** Update `codemap/README.md` with timestamp and change
    summary.

@@ -20,8 +20,20 @@ hyperlinks and the ban on validation report files.
 TEMPLATES (paste this absolute path into every brief):
 !`echo "${CLAUDE_PLUGIN_ROOT}/skills/c4/references/c4-templates.md"`
 
+DIAGRAMS (paste this one too):
+!`echo "${CLAUDE_PLUGIN_ROOT}/skills/c4/references/insight-diagrams.md"`
+
+RENDERER: the model vendors its own copy at `codemap/.insight-c4/render.py`
+(see `c4-templates.md#rendering`). Refresh it from the plugin before use:
+!`echo "cp ${CLAUDE_PLUGIN_ROOT}/skills/c4/assets/insight-c4/*.py codemap/.insight-c4/"`
+
 Read the relevant section yourself whenever a check cites a
-`c4-templates.md#...` anchor.
+`c4-templates.md#...` or `insight-diagrams.md#...` anchor.
+
+Diagrams are Insight-branded and generated from `<level>.c4.json` specs.
+A `.puml` or a `.c4-plantuml/` directory under `codemap/` is a migration
+leftover: convert it per `c4-templates.md#migrating-a-plantuml-codemap` and
+delete it. That conversion is a structural fix, so it runs in Phase 4A.
 
 This skill runs forked: check output stays here and the caller receives the
 summary. Nobody can answer a question mid-run, so report and stop instead
@@ -58,7 +70,8 @@ ls codemap/
 ```bash
 echo "System ID: $SYSTEM_ID"
 find codemap/$SYSTEM_ID -type f \
-  \( -name "*.md" -o -name "*.puml" -o -name "*.png" \) | sort
+  \( -name "*.md" -o -name "*.c4.json" -o -name "*.png" -o -name "*.html" \
+     -o -name "*.svg" -o -name "*.puml" \) | sort
 ```
 
 ---
@@ -72,41 +85,64 @@ JSON with `check_type`, a score, `findings`, and `issues` (per
 c4-templates.md#validation-issue-schema, which the agent reads itself).
 
 **1. Completeness** (`score: X/3`): All deployable units have folders; all
-major modules documented; all integrations in context.puml.
+major modules documented; all integrations in context.c4.json.
 Search: Glob `**/Dockerfile`, `**/docker-compose.yml`; Grep `class \w+`,
 `import.*azure`.
 
 **2. Accuracy** (`score: X% verified`): Documented deps match code imports;
 tech labels match pyproject.toml/package.json; elements in correct parent
-folders; names match actual module/class names.
-Search: read .puml relationships, Grep imports, verify file paths exist.
+folders; names match actual module/class names; every `href` on a spec node
+points at a path that exists.
+Search: read the `edges` in each `.c4.json`, Grep imports, verify file paths
+exist. An edge with no import, call or config behind it is an issue, and so
+is an import path the diagram does not show.
 
-**3. Hierarchy** (`score: X/5`): Each level has .puml + .md; no orphans/empty
+**3. Hierarchy** (`score: X/5`): Each level has a .c4.json + .md; no orphans/empty
 containers; diagram elements match folders; navigation links resolve; folder
 names match diagram IDs; every source file or code element named in a `.md`
 is a hyperlink to the actual file that resolves on GitHub (per
 `c4-templates.md#source-file-links`) — bare-text file references are issues.
 
-**4. Diagram Quality** (`score: X/5`): Valid `@startuml/@enduml`; correct C4
-include per level; correct macros per level (see c4-templates.md); not
-overloaded (>15) or sparse; no orphan elements.
+**4. Diagram Quality** (`score: X/5`): every level has a `<level>.c4.json`
+that the renderer accepts; node `kind` matches the C4 element per
+`insight-diagrams.md#c4-to-insight`; every Azure or Fabric node carries its
+official icon and no other node carries one; exactly one `focal` node, two at
+the most; within budget (16 nodes, 24 edges, 3 zones) and not sparse; no
+orphan nodes. Run the renderer's own checks as part of this:
 
-**5. Image Pairing** is deterministic, so run it yourself rather than
-spawning a subagent. Each level's `.md` pairs with a same-named `.png`
-(`context.md->context.png`, `container.md->container.png`,
-`component.md->component.png`), every PNG has a `.puml` source, and a PNG is
-stale when its `.puml` is newer:
+```bash
+python3 codemap/.insight-c4/render.py 'codemap/'"$SYSTEM_ID"'/**/*.c4.json' --check
+```
+
+**5. Render Pairing** is deterministic, so run it yourself rather than
+spawning a subagent. Each level's `.md` pairs with a same-named spec and
+three rendered files, every rendered file has a spec behind it, and a
+rendered file is stale when its spec is newer:
 
 ```bash
 cd codemap/$SYSTEM_ID
-find . -name "*.md" | while read -r md; do png="${md%.md}.png"; [ -f "$png" ] || echo "missing_png: $png"; done
-find . -name "*.png" | while read -r png; do puml="${png%.png}.puml"; [ -f "$puml" ] || echo "orphan_png: $png"; done
-find . -name "*.puml" | while read -r puml; do png="${puml%.puml}.png"; [ -f "$png" ] && [ "$puml" -nt "$png" ] && echo "stale_png: $png"; done
+find . -name "*.md" | while read -r md; do
+  b="${md%.md}"
+  for ext in c4.json html svg png; do [ -f "$b.$ext" ] || echo "missing: $b.$ext"; done
+done
+for ext in html svg png; do
+  find . -name "*.$ext" | while read -r f; do
+    [ -f "${f%.$ext}.c4.json" ] || echo "orphan: $f"
+  done
+done
+find . -name "*.c4.json" | while read -r spec; do
+  b="${spec%.c4.json}"
+  for ext in html svg png; do
+    [ -f "$b.$ext" ] && [ "$spec" -nt "$b.$ext" ] && echo "stale: $b.$ext"
+  done
+done
+find . -name "*.puml" -o -name ".c4-plantuml" | sed 's/^/plantuml_leftover: /'
 cd - >/dev/null
 ```
 
-Record its output as the fifth check's findings (`missing_pngs`,
-`orphan_pngs`, `stale_pngs`).
+Record its output as the fifth check's findings (`missing`, `orphan`,
+`stale`, `plantuml_leftover`). On a fresh clone every file looks stale by
+mtime, so confirm against commit dates before acting.
 
 Wait for all four agents to complete.
 
@@ -125,7 +161,7 @@ Parameters:
     TEMPLATES: <absolute path from above>
 
     OUTPUTS:
-    - Completeness / Accuracy / Hierarchy / Diagram Quality / Image Pairing: <insert each>
+    - Completeness / Accuracy / Hierarchy / Diagram Quality / Render Pairing: <insert each>
 
     GOALS:
     1. INTERSECTIONS: same issue from multiple checks = higher confidence
@@ -133,8 +169,8 @@ Parameters:
     3. ROOT CAUSE: multiple issues from one cause
     4. PRIORITIZE: severity, frequency, cascade impact, structural first
 
-    FIX ORDER: structural (folders) -> diagrams (puml) -> docs (md) ->
-    navigation (links) -> images (regenerate PNGs)
+    FIX ORDER: structural (folders, PlantUML conversion) -> diagrams
+    (.c4.json specs) -> docs (md) -> navigation (links) -> renders
 
     OUTPUT:
     {
@@ -144,7 +180,7 @@ Parameters:
       "correction_plan": {
         "phase_1_structural": [...], "phase_2_diagrams": [...],
         "phase_3_documentation": [...], "phase_4_navigation": [...],
-        "phase_5_images": [...]
+        "phase_5_renders": [...]
       }
     }
 ```
@@ -156,7 +192,9 @@ Parameters:
 Execute `correction_plan` in order.
 
 **4A. Structural:** `mkdir -p <paths>` for missing folders; `rm -rf <paths>`
-for orphans.
+for orphans. Convert any `.puml` to a `<level>.c4.json` per
+`c4-templates.md#migrating-a-plantuml-codemap`, then delete the `.puml` and
+the `.c4-plantuml/` directory — never leave both formats in the tree.
 
 **4B. Diagrams:** for each fix, spawn a `kokko-viz:c4-mapper` agent given
 the file path, current content, the TEMPLATES path, and the fixes from the
@@ -167,12 +205,10 @@ agent (like a c4-map phase); for link fixes, edit markdown directly.
 
 **4D. Navigation:** fix broken links and drill-down tables.
 
-**4E. Images:** regenerate stale/missing PNGs:
+**4E. Renders:** regenerate every stale or missing output:
 
 ```bash
-for puml in <stale/missing sources>; do
-  plantuml -DRELATIVE_INCLUDE="." -tpng $puml
-done
+python3 codemap/.insight-c4/render.py 'codemap/'"$SYSTEM_ID"'/**/*.c4.json' --png
 ```
 
 ---
@@ -191,9 +227,9 @@ Parameters:
 
     CHECKS:
     1. Structural: folders exist, required files present
-    2. Diagrams: syntax valid, includes correct
+    2. Diagrams: every .c4.json parses and the renderer reports ok
     3. Navigation: links resolve
-    4. Images: PNGs exist, not stale
+    4. Renders: html/svg/png exist for every spec and are not stale
 
     OUTPUT:
     {
@@ -207,11 +243,10 @@ Parameters:
 
 ## Phase 6: Finalization
 
-**6A. Regenerate all PNGs:**
+**6A. Re-render the whole model, and let the renderer's checks run:**
 
 ```bash
-find codemap -name "*.puml" ! -path "*/\.c4-plantuml/*" \
-  -exec plantuml -DRELATIVE_INCLUDE="." -tpng {} \;
+python3 codemap/.insight-c4/render.py 'codemap/**/*.c4.json' --png
 ```
 
 **6B. Report the results IN YOUR REPLY — do NOT write a verification
@@ -227,7 +262,7 @@ validation artifact in the repo. Deliver the summary as a message:
 | Accuracy | X% |
 | Hierarchy | X/5 |
 | Diagram Quality | X/5 |
-| Image Pairing | X missing, Y stale |
+| Render Pairing | X missing, Y stale |
 | Issues Found / Fixed | N / M |
 
 Corrections applied: [list by phase]
@@ -248,13 +283,13 @@ the only file 6B–6C may touch).
 
 ## Scores
 - Completeness: X/3 | Accuracy: X% | Hierarchy: X/5 | Diagram Quality: X/5
-- Image Pairing: X missing, Y stale, Z orphan
+- Render Pairing: X missing, Y stale, Z orphan
 
 ## Synthesis
 - Issues found: X | Intersections: Y | Root causes: Z
 
 ## Fixes Applied
-- Structural / Diagrams / Documentation / Navigation / Images: [counts]
+- Structural / Diagrams / Documentation / Navigation / Renders: [counts]
 ```
 
 Notes: on agent failure, continue other checks and note incomplete
