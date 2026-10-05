@@ -9,28 +9,35 @@ report.
 
 ## Configure ESLint
 
-Add to ESLint config:
+The config to propose (ESLint 9 flat config):
 
 ```javascript
-{
-  plugins: ['jsdoc'],
-  extends: ['plugin:jsdoc/recommended-typescript'],
-  rules: {
-    'jsdoc/require-jsdoc': ['warn', {
-      require: {
-        FunctionDeclaration: true,
-        MethodDefinition: true,
-        ClassDeclaration: true,
-        ArrowFunctionExpression: false,
-        FunctionExpression: false
-      }
-    }],
-    'jsdoc/require-description': 'warn',
-    'jsdoc/require-param-description': 'warn',
-    'jsdoc/require-returns-description': 'warn'
+// eslint.config.js
+import jsdoc from 'eslint-plugin-jsdoc';
+
+export default [
+  jsdoc.configs['flat/recommended-typescript'],
+  {
+    rules: {
+      'jsdoc/require-jsdoc': ['warn', {
+        require: {
+          FunctionDeclaration: true,
+          MethodDefinition: true,
+          ClassDeclaration: true,
+          ArrowFunctionExpression: false,
+          FunctionExpression: false
+        }
+      }],
+      'jsdoc/require-description': 'warn',
+      'jsdoc/require-param-description': 'warn',
+      'jsdoc/require-returns-description': 'warn'
+    }
   }
-}
+];
 ```
+
+On an eslintrc project (ESLint 8), the equivalent is `plugins: ['jsdoc']`
+with `extends: ['plugin:jsdoc/recommended-typescript']`.
 
 ## Commands
 
@@ -44,7 +51,7 @@ itself; on an eslintrc project (ESLint 8) add `--ext .js,.ts,.vue`.
 
 ## Processing Order
 
-Work through files systematically:
+Work through files in this order:
 
 1. Public API functions and classes
 2. Complex functions in components
@@ -118,7 +125,7 @@ docs(<module>): add JSDoc to <file>
 
 | Issue | Resolution |
 | ----- | ---------- |
-| TypeScript conflicts | Use `plugin:jsdoc/recommended-typescript` |
+| TypeScript conflicts | Use the `flat/recommended-typescript` config |
 | Too many warnings | Process file by file |
 | Vue SFC issues | Focus on script section |
 

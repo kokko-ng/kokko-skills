@@ -6,10 +6,10 @@ description: Authoring rules and shared templates for C4 architecture and codema
 # C4 Authoring Skill
 
 The rules every generated C4 or codemap document must follow, and the shared
-templates the `/c4-map`, `/c4-update` and `/c4-verify` commands write from.
+templates the `/c4-map`, `/c4-update` and `/c4-verify` skills write from.
 
 Read this before writing or editing anything under `codemap/`, and whenever a
-command below cites a `c4-templates.md#...` or `insight-diagrams.md#...`
+skill below cites a `c4-templates.md#...` or `insight-diagrams.md#...`
 anchor.
 
 ## Rules
@@ -17,7 +17,7 @@ anchor.
 ### 1. Source file links are mandatory
 
 Every source file, module, class, or other code element named in a generated
-`.md` MUST be a markdown hyperlink to the actual file it refers to. Never bare
+`.md` must be a markdown hyperlink to the actual file it refers to. Never bare
 text like `src/db.py`.
 
 - Use **repo-relative paths** computed from the document's own location, so the
@@ -75,11 +75,10 @@ Full grammar, spec schema and budget: `references/insight-diagrams.md`.
 
 ### 5. No PlantUML
 
-This skill used to emit C4-PlantUML. It does not any more, and a `.puml`
-under `codemap/` is a migration leftover, not a second supported format.
-`/c4-verify` converts one and deletes it. Do not add a `.puml`, do not
-vendor `C4-PlantUML`, and do not reach for `plantuml` when the renderer is
-missing a feature — extend the renderer or the spec.
+A `.puml` under `codemap/` is a leftover from an older codemap format, not a
+second supported format. `/c4-verify` converts one and deletes it. Do not
+add a `.puml`, do not vendor `C4-PlantUML`, and do not reach for `plantuml`
+when the renderer is missing a feature — extend the renderer or the spec.
 
 ## Templates and schemas
 
@@ -104,16 +103,15 @@ cites rather than the whole file.
 | `#output-structure` | The `codemap/` folder layout |
 | `#markdown-templates` | `context.md`, `container.md`, `component.md` skeletons |
 | `#json-output-schemas` | Phase output and validation issue schemas |
-| `#search-strategies` | How to detect external systems, containers, components |
 | `#source-file-links` | Rule 1 in full, with a worked relative-path example |
 | `#navigation-link-patterns` | Parent links and drill-down table format |
 | `#rendering` | Renderer invocation, staleness, and the PlantUML migration |
 | `#error-handling` | Phase and validation failure responses |
 
 The files live next to this skill at `${CLAUDE_SKILL_DIR}/references/`; the
-commands below pass their absolute paths into every agent brief.
+skills below pass their absolute paths into every agent brief.
 
-## Commands and agents
+## Skills and agents
 
 | Skill | Purpose |
 | ----- | ------- |
@@ -125,5 +123,5 @@ All three run forked, so their phase output stays out of the caller's
 conversation, and they delegate to two plugin agents: `kokko-viz:c4-mapper`
 (analysis and edits, with this skill preloaded) and `kokko-viz:c4-checker`
 (read-only mechanical re-checks on a small model). Invoked directly rather
-than through a command, follow the same rules and the same output
+than through one of these skills, follow the same rules and the same output
 structure.

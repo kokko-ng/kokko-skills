@@ -50,4 +50,4 @@ Shared references live in `skills/c4/references/`:
 | Agent | Role |
 | ----- | ---- |
 | `kokko-viz:c4-mapper` | Maps or edits one C4 level; the `c4` skill is preloaded, so it reads the templates itself |
-| `kokko-viz:c4-checker` | Verifies folders, includes, links, and image pairing; read-only, small model |
+| `kokko-viz:c4-checker` | Verifies folders, links, renderer checks, and render pairing; read-only, small model |

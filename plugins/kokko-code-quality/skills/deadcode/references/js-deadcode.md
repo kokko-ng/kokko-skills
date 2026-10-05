@@ -91,7 +91,7 @@ For monorepos:
 | ----- | ---------- |
 | False positive on entry point | Add to `entry` in knip.json |
 | Plugin not detected as used | Add to `ignoreDependencies` |
-| Build fails after removal | Revert, investigate |
+| Build fails after removal | Undo the removal (edit it back, or `git revert` its commit), then investigate |
 
 ## Final Quality Gate
 

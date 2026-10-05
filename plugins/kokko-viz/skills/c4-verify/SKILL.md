@@ -54,7 +54,7 @@ Phase 1: Prep -> Phase 2: Parallel Verification (5 checks) -> Phase 3: Synthesis
 
 ## Phase 1: Preparation
 
-The system to verify is `$1`. If an argument was given, use it as
+The system to verify is `$0`. If an argument was given, use it as
 `SYSTEM_ID` and verify `codemap/<SYSTEM_ID>/` exists — report the error and
 stop if it does not. With no argument:
 
@@ -86,8 +86,6 @@ c4-templates.md#validation-issue-schema, which the agent reads itself).
 
 **1. Completeness** (`score: X/3`): All deployable units have folders; all
 major modules documented; all integrations in context.c4.json.
-Search: Glob `**/Dockerfile`, `**/docker-compose.yml`; Grep `class \w+`,
-`import.*azure`.
 
 **2. Accuracy** (`score: X% verified`): Documented deps match code imports;
 tech labels match pyproject.toml/package.json; elements in correct parent
@@ -97,13 +95,13 @@ Search: read the `edges` in each `.c4.json`, Grep imports, verify file paths
 exist. An edge with no import, call or config behind it is an issue, and so
 is an import path the diagram does not show.
 
-**3. Hierarchy** (`score: X/5`): Each level has a .c4.json + .md; no orphans/empty
+**3. Hierarchy** (`score: X/6`): Each level has a .c4.json + .md; no orphans/empty
 containers; diagram elements match folders; navigation links resolve; folder
 names match diagram IDs; every source file or code element named in a `.md`
 is a hyperlink to the actual file that resolves on GitHub (per
 `c4-templates.md#source-file-links`) — bare-text file references are issues.
 
-**4. Diagram Quality** (`score: X/5`): every level has a `<level>.c4.json`
+**4. Diagram Quality** (`score: X/6`): every level has a `<level>.c4.json`
 that the renderer accepts; node `kind` matches the C4 element per
 `insight-diagrams.md#c4-to-insight`; every Azure or Fabric node carries its
 official icon and no other node carries one; exactly one `focal` node, two at
@@ -215,6 +213,12 @@ python3 codemap/.insight-c4/render.py 'codemap/'"$SYSTEM_ID"'/**/*.c4.json' --pn
 
 ## Phase 5: Re-Verification
 
+The diagram and render checks are deterministic, so run them yourself:
+`render.py ... --check` over the system's specs (every spec must report
+`ok`) and the Phase 2 check-5 pairing snippet (no `missing`, `orphan`,
+`stale` or `plantuml_leftover` lines). Spawn the checker only for the
+structural and navigation checks, which need the markdown read:
+
 ```yaml
 Tool: Agent
 Parameters:
@@ -226,10 +230,9 @@ Parameters:
     FIXES APPLIED: <list>
 
     CHECKS:
-    1. Structural: folders exist, required files present
-    2. Diagrams: every .c4.json parses and the renderer reports ok
-    3. Navigation: links resolve
-    4. Renders: html/svg/png exist for every spec and are not stale
+    1. Structural: folders exist, required files present, drill-down
+       tables match the folders that exist
+    2. Navigation: links resolve
 
     OUTPUT:
     {
@@ -238,6 +241,9 @@ Parameters:
       "overall_status": "PASS|PARTIAL|FAIL"
     }
 ```
+
+Combine its result with your own two checks: the run passes only when all
+three pass.
 
 ---
 
@@ -249,9 +255,9 @@ Parameters:
 python3 codemap/.insight-c4/render.py 'codemap/**/*.c4.json' --png
 ```
 
-**6B. Report the results IN YOUR REPLY — do NOT write a verification
-document.** Never create `VERIFICATION.md`, a report file, or any other
-validation artifact in the repo. Deliver the summary as a message:
+**6B. Report the results in your reply.** Per rule 2 of the c4 skill, no
+`VERIFICATION.md`, report file, or other validation artifact goes into the
+repo. Deliver the summary as a message:
 
 ```markdown
 ## C4 Verification
@@ -260,8 +266,8 @@ validation artifact in the repo. Deliver the summary as a message:
 | ------ | ----- |
 | Completeness | X/3 |
 | Accuracy | X% |
-| Hierarchy | X/5 |
-| Diagram Quality | X/5 |
+| Hierarchy | X/6 |
+| Diagram Quality | X/6 |
 | Render Pairing | X missing, Y stale |
 | Issues Found / Fixed | N / M |
 
@@ -282,7 +288,7 @@ the only file 6B–6C may touch).
 ## Status: PASS/PARTIAL/FAIL
 
 ## Scores
-- Completeness: X/3 | Accuracy: X% | Hierarchy: X/5 | Diagram Quality: X/5
+- Completeness: X/3 | Accuracy: X% | Hierarchy: X/6 | Diagram Quality: X/6
 - Render Pairing: X missing, Y stale, Z orphan
 
 ## Synthesis

@@ -1,8 +1,8 @@
 # C4 Architecture Templates Reference
 
 Shared document templates and patterns for the `/kokko-viz:c4-map`,
-`/kokko-viz:c4-update`, and `/kokko-viz:c4-verify` commands. This is a
-reference file, not a command.
+`/kokko-viz:c4-update`, and `/kokko-viz:c4-verify` skills. This is a
+reference file, not a skill to invoke.
 
 Diagrams are covered by its sibling, `insight-diagrams.md`: the Insight
 design grammar, the `.c4.json` spec schema and the renderer. This file covers
@@ -34,7 +34,8 @@ codemap/
                     └── component.md
 ```
 
-There is no `.c4-plantuml/` directory and no `.puml` file. See `#rendering`.
+A `.puml` file or a `.c4-plantuml/` directory found here is a leftover;
+convert it per `#migrating-a-plantuml-codemap`.
 
 ---
 
@@ -255,38 +256,10 @@ labels of 14 uppercase characters or fewer. Over 16 nodes, split the level.
 
 ---
 
-## Search Strategies
-
-### External System Detection
-
-```text
-Glob: **/*.env*, **/config.*, **/settings.*
-Grep: "requests\.", "httpx\.", "import.*azure", "import.*aws"
-Check: docker-compose.yml for external services
-```
-
-### Container Detection
-
-```text
-Glob: **/Dockerfile, **/docker-compose.yml, **/main.py, **/app.py
-Grep: "FastAPI", "Express", "Flask", "if __name__"
-Check: Directory structure for deployable units
-```
-
-### Component Detection
-
-```text
-Glob: **/__init__.py, **/index.ts
-Grep: "class \w+", "def \w+", "export"
-Check: Package/module structure under each container
-```
-
----
-
 ## Source File Links
 
 Every source file, module, or code element mentioned in a generated `.md`
-document MUST be a markdown hyperlink to the actual file it refers to — never
+document must be a markdown hyperlink to the actual file it refers to — never
 bare text like `market_research_agent/db.py`. Use repo-relative paths from the
 document's own location, so the links resolve when browsing the repo on
 GitHub:
@@ -341,9 +314,11 @@ cp "${CLAUDE_PLUGIN_ROOT}/skills/c4/assets/insight-c4/"*.py codemap/.insight-c4/
 The plugin copy is upstream. Fix the renderer there, never in the vendored
 copy.
 
-`--check` exits non-zero when a connector runs behind a node it does not
-terminate on or a label mask lands on a node; everything else it finds prints
-as a warning. Run it before every commit that touches a spec.
+`--check` exits non-zero when a spec is malformed or over a hard limit
+(three zones, 14-character labels; see `insight-diagrams.md#running-it`),
+when a connector runs behind a node it does not terminate on, or when a
+label mask lands on a node; everything else it finds prints as a warning.
+Run it before every commit that touches a spec.
 
 PNG needs a rasteriser. The renderer tries Playwright from the repo's own
 `node_modules` first (true Inter), then `rsvg-convert`, then `magick` (both
@@ -377,11 +352,13 @@ Do not keep both formats. Two sources of record diverge within a week.
 ### Phase Failure Response
 
 - Report which phase failed and why
-- Do NOT proceed to dependent phases
+- Stop before any phase that depends on it, since it would run on missing
+  input
 - Suggest resolution steps
 
 ### Validation Failure Response
 
 - List all error-severity issues first
-- Offer to proceed with warnings only
+- Proceed when only warnings remain; on any error, stop before writing
+  files and report the errors in the summary
 - Flag items requiring manual review

@@ -11,7 +11,7 @@ background: false
 
 Map the codebase architecture as a hierarchical C4 model
 (Context -> Containers -> Components). No existing model required.
-`$1`, when given, is the directory to map (default when empty: the current
+`$0`, when given, is the directory to map (default when empty: the current
 project root) — scope every search to it and state it in every phase prompt
 below.
 
@@ -75,11 +75,6 @@ Parameters:
     4. Map external systems (SDK imports, env vars, HTTP clients)
     5. Identify preliminary containers (deployable units)
 
-    SEARCH:
-    - Glob: **/*.env*, **/pyproject.toml, **/package.json
-    - Grep: "requests\.", "httpx\.", "import.*azure", "import.*aws"
-    - Check docker-compose.yml for external services
-
     TEMPLATES: <absolute path from above>
     DIAGRAMS: <absolute path from above>
     OUTPUT: JSON matching c4-templates.md#context-phase-output (read that section)
@@ -112,11 +107,6 @@ Parameters:
     4. Identify preliminary components within each
     5. Validate external system boundaries
 
-    SEARCH:
-    - Glob: **/Dockerfile, **/docker-compose.yml, **/main.py
-    - Grep: "FastAPI", "Express", "Flask"
-    - Analyze directory structure per container
-
     TEMPLATES: <absolute path from above>
     DIAGRAMS: <absolute path from above>
     OUTPUT: JSON matching c4-templates.md#container-phase-output (read that section)
@@ -147,11 +137,6 @@ Parameters:
     2. Identify internal dependencies (same container)
     3. Identify cross-container dependencies
     4. Map component interfaces/contracts
-
-    SEARCH:
-    - Read __init__.py or index.ts for exports
-    - Grep: "class \w+"
-    - Analyze import statements
 
     TEMPLATES: <absolute path from above>
     DIAGRAMS: <absolute path from above>
@@ -193,7 +178,8 @@ Parameters:
     }
 ```
 
-If validation fails with errors, report to user before proceeding.
+If validation still reports errors, stop here and report them in the
+summary; do not generate files. Warnings alone do not stop the run.
 
 ---
 
@@ -209,8 +195,7 @@ GitHub. Verify each link target exists before writing it.
 ### Step 0: Vendor the renderer
 
 The repo must be able to regenerate its own diagrams without this plugin
-installed, so the renderer is copied in beside the model — exactly as the
-C4-PlantUML library used to be:
+installed, so the renderer is copied in beside the model:
 
 ```bash
 mkdir -p codemap/.insight-c4

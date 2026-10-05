@@ -41,21 +41,19 @@ uvx mypy src/ tests/
 | `[attr-defined]` | Attribute not defined | Add attribute or fix access |
 | `[union-attr]` | Access on Optional | Add None check or use `assert` |
 | `[no-untyped-def]` | Missing annotations | Add param and return types |
-| `[import]` | Cannot find module | Install stubs or add to ignore list |
-| `[misc]` | Various issues | Read message carefully |
+| `[import-not-found]` / `[import-untyped]` | Cannot find module, or it has no stubs | Supply stubs ephemerally, or propose a per-module override |
+| `[misc]` | Various issues | Fix per the message text |
 
 ## Handle External Dependencies
 
-Add to `pyproject.toml`:
+Supply missing stubs ephemerally (see Tool selection). For a package that
+publishes no stubs, propose a per-module override in the report, never a
+global `ignore_missing_imports`:
 
 ```toml
-[tool.mypy]
-ignore_missing_imports = true
-
-# Or ignore specific packages
 [[tool.mypy.overrides]]
-module = ["some_package.*", "another_package"]
-ignore_missing_imports = true
+module = ["some_package.*"]
+ignore_missing_imports = true  # no published stubs
 ```
 
 ## Configure Strictness
@@ -95,10 +93,11 @@ Avoid `Any` unless it is genuinely unavoidable.
 
 ## Validation
 
-After each fix:
+After each fix (use `uv run` instead of `uvx` when mypy is a project
+dependency, Tool selection step 1):
 
 ```bash
-uv run mypy path/to/file.py
+uvx mypy path/to/file.py
 ```
 
 ## Commit Format
@@ -110,5 +109,5 @@ fix(types): resolve mypy errors in <module>
 ## Final Quality Gate
 
 ```bash
-uv run mypy . --exclude venv
+uvx mypy . --exclude venv --exclude .venv --exclude node_modules
 ```

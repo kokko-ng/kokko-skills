@@ -6,7 +6,6 @@ repo inspection, then ask the user. Never invent values.
 
   APP_NAME                    Application name
   PROGRESS_FILE               Defect ledger path, e.g. prompts/aesthetics-progress.md
-  BROWSER_TOOL                Browser automation tool: playwright-cli (the Playwright MCP server is not permitted -- see the Browser Automation section)
   FRONTEND_FRAMEWORK / FRONTEND_START_COMMAND / FRONTEND_URL
   BACKEND_FRAMEWORK / BACKEND_START_COMMAND / BACKEND_URL
   THEMES                      Theme list, e.g. "dark, light" (single-theme apps: delete the theming block)
@@ -14,9 +13,10 @@ repo inspection, then ask the user. Never invent values.
   DESKTOP_STATES              Real page/state list to screenshot at 1280px (enumerate from the router)
   MOBILE_STATES               Real page/state list to screenshot at 375px
 
-Optional blocks. Delete the whole block -- plus every line elsewhere that
-starts with the block name in brackets, e.g. "[theming]" -- when it does not
-apply. Strip the bracket tags from lines you keep.
+Optional blocks. Delete the whole block when it does not apply, together
+with every line elsewhere tagged with the block name in brackets, e.g.
+"[theming]" (at the start of the line, list item, or table row). When the
+block applies, keep the line and strip just the tag.
 
   theming       App has more than one theme.
   registration  App has self-service user registration.
@@ -33,34 +33,34 @@ tailored output.
 | ---------- | -------------------------------------------- |
 | `frontend` | {{FRONTEND_FRAMEWORK}} on `{{FRONTEND_URL}}` |
 | `backend`  | {{BACKEND_FRAMEWORK}} on `{{BACKEND_URL}}`   |
-| `tool`     | {{BROWSER_TOOL}}                             |
+| `tool`     | Playwright CLI (`playwright-cli`)            |
 | `ledger`   | `{{PROGRESS_FILE}}`                          |
 | [theming] `themes` | {{THEMES}}                           |
 
 ---
 
-## Browser Automation -- Playwright CLI (NOT the MCP server)
+## Browser Automation -- Playwright CLI
 
-`playwright-cli` in this prompt means the Playwright **command-line interface**,
-driven from the shell -- NOT the Playwright MCP server or its `browser_*` tools.
+`playwright-cli` in this prompt means the Playwright command-line interface,
+driven from the shell: ad-hoc Node scripts using the `playwright` package,
+`.spec` files run with `npx playwright test`, or
+`npx playwright screenshot <url> <out.png>`. All navigation, snapshots, and
+screenshots go through it, because a script can be re-run unchanged for the
+confirming re-screenshot of each fix. The Playwright MCP server and its
+`mcp__playwright__*` / `browser_*` tools are not used, even when they are
+connected.
 
-- Drive the browser and capture screenshots with the Playwright CLI and the
-  `playwright` package: ad-hoc Node scripts, `.spec` files run with
-  `npx playwright test`, or `npx playwright screenshot <url> <out.png>`. Set the
-  viewport explicitly in the script for the 1280px (desktop) and 375px (mobile)
-  passes.
+- Set the viewport explicitly in the script for the 1280px (desktop) and
+  375px (mobile) passes.
 - If Playwright is not installed, add it first
   (`npm i -D @playwright/test && npx playwright install chromium`).
-- Do NOT use the Playwright MCP server or any `mcp__playwright__*` / `browser_*`
-  tool for navigation, snapshots, or screenshots. All browser interaction goes
-  through the Playwright CLI.
 
 ---
 
 ## Primary Goal
 
 Work autonomously to identify and fix every visual and UI defect in the
-locally running application. Use {{BROWSER_TOOL}} to screenshot every page,
+locally running application. Use the Playwright CLI to screenshot every page,
 state, and interactive component; fix each defect; re-screenshot to confirm.
 
 Completion is defined solely by the checklist in the "Completion, Blockers &
@@ -77,9 +77,13 @@ memory does not survive context compaction or fresh-context passes
 - **On start:** if the file exists, read it and resume from the first
   screenshot pass or defect not marked done. If it does not exist, create it
   with one line per screenshot pass (viewport x theme), all `pending`.
+- **Pass format:** `P-01 | pending / done | viewport/theme | short note`.
 - **Defect format:** `D-014 | open / fixed / blocked | page + state | viewport/theme | short note`
   -- append a line the moment a defect is spotted; flip it to `fixed` only
   after the confirming re-screenshot.
+- Every line starts with an ID of letters, a hyphen, and digits (`P-01`,
+  `D-014`): the kokko-janitor progress-guard hook counts open items by that
+  shape and ignores lines without one.
 - **Update immediately**, never in batches. Append one line to a
   `## Session log` section at the bottom of the file each pass.
 
@@ -101,11 +105,11 @@ Verify the application loads at `{{FRONTEND_URL}}` before starting.
 
 ---
 
-## Screenshot Coverage -- Mandatory
+## Screenshot Coverage
 
 Screenshot every state listed below at desktop (1280px wide) and mobile
 (375px wide). If the layout has tablet-specific breakpoints, add a 768px pass
-for the affected pages. Do not skip any state.
+for the affected pages.
 
 [theming] Repeat full coverage once per theme in {{THEMES}}. Before each
 theme's pass, switch to it with the app's theme switcher and confirm it is
@@ -202,9 +206,9 @@ For every screenshot, inspect and fix defects in the following categories:
    structure adjustment), let hot-reload pick it up, and re-screenshot the
    same state, viewport, and theme to confirm. Do not move on until the fix
    is visually confirmed and the ledger updated.
-4. Final pass: re-screenshot ALL states at both viewports
-   [theming] in every theme -- to confirm zero remaining defects and no
-   regressions from the fixes.
+4. Final pass: re-screenshot all states at both viewports to confirm zero
+   remaining defects and no regressions from the fixes.
+   [theming] Repeat the final pass in every theme.
 5. Run `{{TYPE_CHECK_COMMAND}}` -- it must pass with zero errors.
 
 **Stuck rule:** after 3 failed fix attempts on the same defect, record what
@@ -215,11 +219,12 @@ blocked defects at the end.
 
 ## Constraints
 
-- **Do NOT change application logic, API calls, or backend code.** Fix only
-  frontend visuals: templates, styles, CSS classes, component structure.
-- **Do NOT modify `spec.md`** or any specification documents.
-- **Never alter** authentication flow, data handling, or WebSocket behaviour
-  as a side effect of visual changes.
+Fixes stay within frontend visuals: templates, styles, CSS classes, and
+component structure. Application logic, API calls, backend code, `spec.md`
+and other specification documents, and the behaviour of authentication,
+data handling, and WebSockets stay as they are -- this pass changes how the
+app looks, not what it does. A defect whose fix would need any of them is
+marked `blocked` (see below).
 
 ---
 

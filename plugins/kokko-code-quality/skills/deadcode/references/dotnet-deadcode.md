@@ -5,9 +5,11 @@
 - .NET SDK 6.0+
 - Roslynator.Analyzers when the solution already references it. Adding it is a project change: propose `dotnet add package Roslynator.Analyzers` in the report instead of running it during a check
 
-## Enable Dead Code Analyzers
+## Analyzer Configuration (propose, do not apply)
 
-Add to `.csproj` or `Directory.Build.props`:
+The check runs the analyzers the solution already references. When these
+settings are missing, put this block in the report for the user to adopt;
+adding a package reference during a check is a project change:
 
 ```xml
 <PropertyGroup>
@@ -16,7 +18,8 @@ Add to `.csproj` or `Directory.Build.props`:
 </PropertyGroup>
 
 <ItemGroup>
-  <PackageReference Include="Roslynator.Analyzers" Version="4.*"
+  <!-- set Version to the current release on nuget.org -->
+  <PackageReference Include="Roslynator.Analyzers" Version="<version>"
                     PrivateAssets="all" />
 </ItemGroup>
 ```
@@ -59,7 +62,8 @@ dotnet list package --outdated
 
 ## Verification Checklist
 
-For each item detected, **thoroughly verify** it is truly unused:
+Verify each finding is unused before removing it; the analyzer cannot
+see dynamic or convention-based use:
 
 **Cross-check references:**
 
@@ -82,7 +86,7 @@ For each item detected, **thoroughly verify** it is truly unused:
 
 ## Removal Process
 
-**Only if absolutely certain the code is unused:**
+Once a finding is confirmed unused:
 
 1. Remove the dead code
 2. Create a separate commit:
@@ -108,14 +112,6 @@ For code used via reflection or conventions:
     "CodeQuality", "IDE0051",
     Justification = "Used by Entity Framework navigation")]
 private ICollection<Order> Orders { get; set; }
-```
-
-Or configure in `.editorconfig`:
-
-```ini
-[*.cs]
-[**/Entities/*.cs]
-dotnet_diagnostic.IDE0051.severity = none
 ```
 
 ## Commit Format

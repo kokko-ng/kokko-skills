@@ -26,7 +26,8 @@ uvx vulture . vulture_whitelist.py --exclude .venv
 
 ## Verification Checklist
 
-For each item detected, **thoroughly verify** it is truly unused:
+Verify each finding is unused before removing it; the analyzer cannot
+see dynamic or convention-based use:
 
 **Cross-check references:**
 
@@ -47,7 +48,7 @@ For each item detected, **thoroughly verify** it is truly unused:
 
 ## Removal Process
 
-**Only if absolutely certain the code is unused:**
+Once a finding is confirmed unused:
 
 1. Remove the dead code
 2. Create a separate commit:
@@ -59,7 +60,7 @@ For each item detected, **thoroughly verify** it is truly unused:
 
 ## Handle One Item at a Time
 
-Do NOT batch deletions. Process one finding at a time to maintain
+Do not batch deletions. Process one finding at a time to maintain
 traceability and safety.
 
 ## Whitelist for False Positives

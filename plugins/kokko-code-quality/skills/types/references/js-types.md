@@ -89,10 +89,11 @@ Avoid `any` unless it is genuinely unavoidable.
 
 ## Validation
 
-After each fix:
+After each fix, re-run the project check (`tsc` has no per-file mode that
+honors `tsconfig.json`):
 
 ```bash
-npx tsc --noEmit <file>
+npx tsc --noEmit -p tsconfig.json
 ```
 
 ## Commit Format

@@ -18,7 +18,7 @@ Audit a documentation file so it accurately reflects the current codebase, then 
    - Description and project structure match the actual repo.
    - Package manager matches lockfiles: `ls pyproject.toml uv.lock package.json pnpm-lock.yaml yarn.lock requirements.txt 2>/dev/null`.
    - Prerequisites match installed tools/versions (`node --version`, `python --version`, `go version`, etc.).
-   - Documented build/run/test/install commands execute successfully — run each code block from the project root and confirm the documented result.
+   - Documented build/run/test/install commands execute successfully — run each code block from the project root and confirm the documented result. Do not run commands that deploy, publish, push, delete data, or change shared state (cloud resources, a real database, a remote repo); check that their tools and flags exist instead, and list them as not executed in the summary.
    - Referenced paths and directories exist.
    - Mentioned tools appear in dependency files; versions are current.
    - Config files, env vars, and documented settings exist and match.
@@ -28,6 +28,6 @@ Audit a documentation file so it accurately reflects the current codebase, then 
    - External: fetch each URL (docs, resources, badges, repo links) and confirm it resolves.
 5. **Flag outdated content:** references to deleted files, deprecated commands/workflows, old versions, stale screenshots, obsolete config.
 6. **Update** the file: remove outdated info, correct commands/paths/versions, fix broken links, add missing critical context.
-7. **Validate:** re-run documented commands from scratch and confirm referenced paths exist and the project runs.
+7. **Validate:** re-run the documented commands you ran in step 2 from scratch and confirm referenced paths exist and the project runs.
 
-Done when all documented commands work, all paths and links resolve, and no outdated info remains.
+Done when every documented command you ran works (the rest listed as not executed), all paths and links resolve, and no outdated info remains.

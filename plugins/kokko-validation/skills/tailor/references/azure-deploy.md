@@ -22,9 +22,12 @@ repo inspection, read-only `az cli`, then ask the user. Never invent values.
   If Blob Storage chosen:      STORAGE_ACCOUNT_NAME, CONTAINER_NAME
   azure-ai block only:         AI_ACCOUNT_NAME, DEPLOYMENT_NAME, MODEL_NAME, TPM, API_ENDPOINT
 
-Optional blocks. Delete the whole block -- plus every line elsewhere that
-starts with the block name in brackets, e.g. "[azure-ai]" -- when it does not
-apply. Strip the bracket tags from lines you keep. In bash snippets the same
+Optional blocks. Delete the whole block when it does not apply, together
+with everything elsewhere tagged with the block name in brackets, e.g.
+"[azure-ai]": a tag at the start of a line, list item, or table row marks
+that whole line; a tag inside a line (a diagram box like "[azure-ai: ...]")
+marks just that fragment. When the block applies, keep the content and
+strip just the tag. In bash snippets the same
 convention appears as `# [azure-ai]` comment markers: delete the marked lines
 when the block does not apply, delete just the markers when it does.
 
@@ -83,9 +86,10 @@ browser by hand.
   `E2E_BASE_URL` environment variable. Specs use web-first assertions that
   auto-wait -- never `waitForTimeout`, never screenshot judging.
 - Point both suites at the deployed frontend origin
-  (`API_BASE_URL` / `E2E_BASE_URL` = `https://$FRONTEND_FQDN`) so the nginx
-  `/api` proxy is exercised. If the repo lacks either suite, creating it is
-  part of Phase 5 -- build it in the repo and commit it.
+  (`API_BASE_URL` / `E2E_BASE_URL` = `https://$FRONTEND_FQDN`, derived in
+  the same command that runs them -- see Phase 5.2) so the nginx `/api`
+  proxy is exercised. If the repo lacks either suite, creating it is part
+  of Phase 5 -- build it in the repo and commit it.
 - Tests are tagged with the verbatim `spec.md` story IDs they validate
   (`US-003` in a describe/test name, docstring, or marker, so the Phase 5.2
   coverage grep finds them), create and clean up their own data (this is a
@@ -93,11 +97,14 @@ browser by hand.
   fixed durations.
 - [azure-ai] Assertions on AI-backed endpoints target status codes and
   response structure, never exact model output.
-- Browser automation lives ONLY inside the committed Playwright specs. Do
-  NOT drive a browser yourself or judge outcomes visually: no ad-hoc
-  playwright-cli sessions or one-off page-driving scripts, no Playwright
-  MCP server or `mcp__playwright__*` / `browser_*` tools, no
-  screenshot-based validation. Visual polish is the aesthetics prompt's job.
+- Browser automation lives only inside the committed Playwright specs,
+  because a committed spec gives the same verdict on every re-run and a
+  hand-driven session does not. So the browser is not driven by hand and
+  outcomes are not judged visually: no ad-hoc playwright-cli sessions or
+  one-off page-driving scripts, no Playwright MCP server or
+  `mcp__playwright__*` / `browser_*` tools (even when they are connected),
+  no screenshot-based validation. Visual polish is the aesthetics prompt's
+  job.
 
 ---
 
@@ -112,14 +119,21 @@ application end-to-end against `spec.md`.
 Completion is defined solely by the checklist in the "Completion, Blockers &
 Stopping" section at the end of this prompt -- nothing else.
 
-**Resource group constraint -- ABSOLUTE:** every resource lives in
-`{{RESOURCE_GROUP}}` ({{AZURE_REGION}}). No other resource group may be used,
-referenced, or created under any circumstances; every `az` command targets
-`-g {{RESOURCE_GROUP}}` explicitly.
+**Resource group constraint:** every resource lives in `{{RESOURCE_GROUP}}`
+({{AZURE_REGION}}), and every `az` command targets `-g {{RESOURCE_GROUP}}`
+explicitly. No other resource group is used, referenced, or created, so
+everything this deployment owns can be found and costed in one place and
+nothing outside it is touched.
 
 **Secrets rule:** secret values (keys, passwords, connection strings) exist
 only in shell variables, GitHub secrets, and Container App secrets. Never
 write them into files, commits, logs, or this prompt.
+
+**Shell state:** each Bash call starts a fresh shell -- the working
+directory carries over, variables do not. Run each `bash` block below as a
+single call; every block derives the values it needs itself (FQDNs from
+`az containerapp show`, secrets from where they are stored) instead of
+relying on a variable an earlier block set.
 
 ---
 
@@ -130,10 +144,13 @@ memory does not survive context compaction or fresh-context passes
 (multipass); this file does.
 
 - **On start:** if the file exists, read it and resume from the first item not
-  marked `passed`. If it does not exist, create it with one line per phase
-  step below and one line per user story in `spec.md`, all `pending`.
-- **Line format:** `item | pending / in-progress / passed / blocked | short note`
-  -- for `blocked`, the note states exactly what is missing and what was tried.
+  marked `passed`. If it does not exist, create it with one `S-NN` line per
+  phase step below and one line per user story in `spec.md`, all `pending`.
+- **Line format:** `S-04 | pending / in-progress / passed / blocked | 1.5 Container Apps environment`
+  or `US-003 | ... | short note` -- for `blocked`, the note states exactly
+  what is missing and what was tried. Every line starts with an ID of
+  letters, a hyphen, and digits: the kokko-janitor progress-guard hook
+  counts open items by that shape and ignores lines without one.
 - **Update immediately** whenever an item changes state -- never in batches.
 - Append one line to a `## Session log` section at the bottom of the file at
   the start of each pass.
@@ -202,21 +219,19 @@ az acr create \
 
 ### 1.3 Create Database Resources
 
-Adapt to the chosen {{AZURE_DB_TYPE}}. Example for Azure SQL -- note the
-password is generated, pushed straight into a GitHub secret, and kept only in
-the shell variable (used again in Phase 3.3; regenerate the same way if the
-shell is lost):
+Adapt to the chosen {{AZURE_DB_TYPE}}. Example for Azure SQL. The server is
+created with a throwaway generated admin password that is never stored:
+Phase 3.3 sets the real one in the same command that hands it to the
+backend app, and from then on the backend Container App secret
+`sql-password` is where it lives.
 
 ```bash
-SQL_ADMIN_PASSWORD="$(openssl rand -base64 24)"
-gh secret set AZURE_SQL_PASSWORD --body "$SQL_ADMIN_PASSWORD"
-
 az sql server create \
   --resource-group {{RESOURCE_GROUP}} \
   --name {{SQL_SERVER_NAME}} \
   --location {{AZURE_REGION}} \
   --admin-user sqladmin \
-  --admin-password "$SQL_ADMIN_PASSWORD"
+  --admin-password "$(openssl rand -base64 24)"
 
 az sql db create \
   --resource-group {{RESOURCE_GROUP}} \
@@ -327,7 +342,8 @@ App's environment, while nginx runtime variables like `$host` are untouched
 to be baked into the image -- changing it is just an env-var update.
 
 ```dockerfile
-FROM node:20-alpine AS build
+# Match the Node major to the project's engines field / .nvmrc
+FROM node:24-alpine AS build
 
 WORKDIR /app
 COPY package*.json ./
@@ -404,7 +420,7 @@ jobs:
   build-and-deploy-backend:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
 
       - name: Login to Azure
         uses: azure/login@v2
@@ -430,7 +446,7 @@ jobs:
   build-and-deploy-frontend:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
 
       - name: Login to Azure
         uses: azure/login@v2
@@ -502,12 +518,18 @@ jobs:
 ### 3.2 Set GitHub Secrets
 
 ```bash
-# Azure Service Principal credentials for azure/login
-gh secret set AZURE_CREDENTIALS < azure-credentials.json
+# Service principal for azure/login, scoped to {{RESOURCE_GROUP}}. The
+# credential JSON goes straight from az into the secret -- never into a file.
+az ad sp create-for-rbac --name "{{APP_NAME}}-deploy" --role contributor \
+  --scopes "$(az group show --name {{RESOURCE_GROUP}} --query id -o tsv)" \
+  --json-auth | gh secret set AZURE_CREDENTIALS
 ```
 
-(`AZURE_SQL_PASSWORD` was already set in Phase 1.3. Add further secrets the
-workflow needs the same way -- always via `gh secret set`, never committed.)
+Creating a service principal needs Entra ID permissions; if the account
+lacks them, mark this step `blocked` and ask for an existing principal's
+JSON to be piped into `gh secret set AZURE_CREDENTIALS` the same way.
+(`AZURE_SQL_PASSWORD` is set in Phase 3.3. Add further secrets the workflow
+needs the same way -- always via `gh secret set`, never committed.)
 
 ### 3.3 Create Container Apps with Placeholder Images
 
@@ -515,7 +537,22 @@ Create the apps once with placeholder images; GitHub Actions replaces the
 images from then on. Create the backend first, then the frontend (which needs
 the backend FQDN for its `BACKEND_ORIGIN` env var).
 
+Run this block as one Bash call. It sets the SQL admin password for real:
+generated, applied to the server, stored as a GitHub secret and as the
+backend's `sql-password` Container App secret, all inside this one command.
+Later steps that need the password read it back from that Container App
+secret
+(`az containerapp secret show -g {{RESOURCE_GROUP}} -n {{BACKEND_APP_NAME}} --secret-name sql-password --query value -o tsv`)
+-- never regenerate it on its own.
+
 ```bash
+set -eo pipefail
+
+SQL_ADMIN_PASSWORD="$(openssl rand -base64 24)"
+az sql server update -g {{RESOURCE_GROUP}} -n {{SQL_SERVER_NAME}} \
+  --admin-password "$SQL_ADMIN_PASSWORD" --output none
+gh secret set AZURE_SQL_PASSWORD --body "$SQL_ADMIN_PASSWORD"
+
 # [azure-ai] Retrieve the AI key into the shell only -- never into a file
 AI_KEY="$(az cognitiveservices account keys list -n {{AI_ACCOUNT_NAME}} -g {{RESOURCE_GROUP}} | jq -r '.key1')"   # [azure-ai]
 
@@ -570,8 +607,9 @@ done
 
 ## Phase 4: Deployment Execution
 
-Direct `az` deployment of code is allowed ONLY for the Phase 3.3 placeholder
-creation above. From here on, ALL code deployments go through GitHub Actions:
+Direct `az` deployment of code is allowed only for the Phase 3.3 placeholder
+creation above, which runs once (re-running it would put the placeholder
+image back). From here on, all code deployments go through GitHub Actions:
 commit, push, wait for the workflow. If the workflow fails, debug and push a
 fix -- never bypass the pipeline.
 
@@ -623,7 +661,15 @@ the deployed frontend origin, tracking each story in `{{PROGRESS_FILE}}`:
 the API responds correctly, the user-visible flow passes in its Playwright
 spec, data persists in {{AZURE_DB_TYPE}}, files round-trip through
 {{AZURE_STORAGE_TYPE}}, and every spec edge/error scenario passes as its
-own test.
+own test. Run the suites in one Bash call that derives the origin itself;
+the subshells keep each suite's `cd` from leaking into the next command:
+
+```bash
+FRONTEND_FQDN=$(az containerapp show -g {{RESOURCE_GROUP}} -n {{FRONTEND_APP_NAME}} --query "properties.configuration.ingress.fqdn" -o tsv)
+export API_BASE_URL="https://$FRONTEND_FQDN" E2E_BASE_URL="https://$FRONTEND_FQDN"
+({{API_TEST_COMMAND}})
+({{E2E_TEST_COMMAND}})
+```
 
 Verify spec coverage mechanically -- every story ID in `spec.md` must
 appear in the suite; write tests for any ID this prints:

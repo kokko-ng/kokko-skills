@@ -54,11 +54,12 @@ uvx --from import-linter lint-imports --verbose
 
 ### Rich output workaround
 
-import-linter v2.10+ uses Python Rich for output, rendering Unicode
-box-drawing characters that are unreadable when captured in non-TTY contexts.
-`NO_COLOR=1` and `TERM=dumb` strip ANSI escapes but NOT the Unicode glyphs.
-
-**Use the API directly** to get structured, parseable results:
+Some import-linter releases render output with Python Rich, whose Unicode
+box-drawing characters are unreadable when captured outside a TTY;
+`NO_COLOR=1` and `TERM=dumb` strip ANSI escapes but not those glyphs. When
+the captured `lint-imports` output is unreadable, call the API directly
+instead (this patches a module attribute, so confirm it still exists in the
+installed version):
 
 ```python
 import io, os, sys

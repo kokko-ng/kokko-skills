@@ -34,7 +34,7 @@ Colima as the Docker runtime and the `devcontainer` CLI as the launcher.
 ### 1. Preflight
 
 ```bash
-TARGET="${1:-$PWD}"     # resolve to an absolute path
+TARGET="/abs/path/to/target"   # the target-directory argument as an absolute path; $PWD when none was given
 ls -la "$TARGET"
 ls -la "$TARGET/.devcontainer" 2>/dev/null && echo "ALREADY HAS .devcontainer"
 git -C "$TARGET" rev-parse --show-toplevel 2>/dev/null || echo "NOT A GIT REPO"

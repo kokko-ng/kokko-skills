@@ -41,7 +41,8 @@ named, or the word matches none of the four, ask which one to use
 
 `local`, `deployed`, and `azure-deploy` treat `spec.md` as the source of
 truth for what to validate. If it is missing, ask before continuing:
-generate it now with `/spec` (recommended), proceed anyway, or abort.
+generate it now with `/kokko-code-quality:spec` (recommended), proceed
+anyway, or abort.
 
 ### 3. Inspect the repo
 
@@ -62,8 +63,6 @@ Determine, from the code and configuration (not by guessing):
   the stack's conventional tooling and fill the placeholders with the
   commands the suite will use once the prompt creates it — the templates
   make creating a missing suite part of the prompt's job
-- `aesthetics` only: which browser automation tool is actually available
-  (playwright-cli) for its `{{BROWSER_TOOL}}` placeholder
 - Existing Azure config: workflow files, bicep/terraform, `.env.example`,
   CLAUDE.md notes, existing `prompts/*.md`
 
@@ -85,8 +84,10 @@ a secret, keep the retrieval command, not the retrieved value.
 ### 5. Adapt, don't just substitute
 
 - Delete optional blocks that do not apply (`<!-- OPTIONAL: name -->` ...
-  `<!-- END OPTIONAL: name -->`) together with every stray line tagged
-  `[name]`; strip the `[name]` tags from lines you keep. Where a template
+  `<!-- END OPTIONAL: name -->`) together with everything tagged `[name]`
+  elsewhere (whole tagged lines; just the tagged fragment where the tag sits
+  inside a line, such as a `[name: ...]` diagram box); strip the tags from
+  what you keep. Where a template
   offers variants (e.g. the deployed template's auth variants), keep
   exactly one and delete the rest.
 - Expand generics with repo detail: real endpoint tables, real protected
@@ -128,8 +129,8 @@ Mechanical checks before reporting — all must be clean:
 - `grep -n '{{' prompts/<file>.md` returns nothing (no unresolved
   placeholders)
 - Grepping for `TAILORING NOTES`, `OPTIONAL:`, `AUTH VARIANT`, and each
-  `[tag]` named in the template's manifest returns nothing (no template
-  scaffolding left)
+  `[tag]` and `[tag:` named in the template's manifest returns nothing (no
+  template scaffolding left)
 - Every command the prompt tells its agent to run exists in this repo:
   the type-check script is defined, the start commands and directories
   are real, referenced routes exist
@@ -145,6 +146,7 @@ that need the user's confirmation before the prompt is run.
 
 Tailored prompts are run directly (paste or `@prompts/<file>.md`) or in
 repeated fresh-context passes via `/kokko-janitor:multipass` from the
-kokko-janitor plugin (e.g. `2 passes of prompts/deployed-validation.md`).
+kokko-janitor plugin (e.g.
+`/kokko-janitor:multipass 2 prompts/deployed-validation.md`).
 Each pass resumes from the prompt's progress file, so completed items are
 skipped and blocked ones get revisited.

@@ -25,9 +25,10 @@ repo inspection, read-only `az cli`, then ask the user. Never invent values.
   azure-ai block only:        RESOURCE_GROUP, AZURE_REGION, AI_ACCOUNT_NAME,
                               DEPLOYMENT_NAME, MODEL_NAME, TPM, API_ENDPOINT_BASE
 
-Optional blocks. Delete the whole block -- plus every line elsewhere that
-starts with the block name in brackets, e.g. "[azure-ai]" -- when it does not
-apply. Strip the bracket tags from lines you keep.
+Optional blocks. Delete the whole block when it does not apply, together
+with every line elsewhere tagged with the block name in brackets, e.g.
+"[azure-ai]" (at the start of the line, list item, or table row). When the
+block applies, keep the line and strip just the tag.
 
   azure-ai      App calls a pre-provisioned Azure AI model. Delete if there is no AI integration.
   websocket     App uses WebSockets.
@@ -95,12 +96,14 @@ by hand.
   execution order, and produce the same result on every re-run.
 - [azure-ai] Assertions on AI-backed endpoints target status codes and
   response structure, never exact model output.
-- Browser automation lives ONLY inside those committed Playwright specs.
-  Do NOT drive a browser yourself or judge outcomes visually: no ad-hoc
-  playwright-cli sessions or one-off page-driving scripts, no Playwright
-  MCP server or `mcp__playwright__*` / `browser_*` tools, no
-  screenshot-based validation (Playwright's failure screenshots and traces
-  are debugging artifacts, not pass evidence). Pixel-level appearance is
+- Browser automation lives only inside those committed Playwright specs,
+  because a committed spec gives the same verdict on every re-run and a
+  hand-driven session does not. So the browser is not driven by hand and
+  outcomes are not judged visually: no ad-hoc playwright-cli sessions or
+  one-off page-driving scripts, no Playwright MCP server or
+  `mcp__playwright__*` / `browser_*` tools (even when they are connected),
+  no screenshot-based validation (Playwright's failure screenshots and
+  traces are debugging artifacts, not pass evidence). Pixel-level appearance is
   out of scope here -- the aesthetics prompt covers it.
 
 ### Spec Coverage -- Every Story Maps to Tests
@@ -147,9 +150,13 @@ memory does not survive context compaction or fresh-context passes
 
 - **On start:** if the file exists, read it and resume from the first item not
   marked `passed`. If it does not exist, create it with one line per user
-  story in `spec.md` (plus a few setup lines), all `pending`.
+  story in `spec.md` (plus a few `S-NN` setup lines), all `pending`.
 - **Line format:** `US-003 | pending / in-progress / passed / blocked | short note`
-  -- for `blocked`, the note states exactly what is missing and what was tried.
+  (setup lines: `S-01 | pending | install dependencies`) -- for `blocked`,
+  the note states exactly what is missing and what was tried. Every line
+  starts with an ID of letters, a hyphen, and digits: the kokko-janitor
+  progress-guard hook counts open items by that shape and ignores lines
+  without one.
 - **Update immediately** whenever an item changes state -- never in batches,
   never only at the end.
 - Append one line to a `## Session log` section at the bottom of the file at
@@ -211,7 +218,7 @@ into logs or files):
 
 ### Type Checking
 
-Backend and frontend MUST pass type checking with zero errors:
+Backend and frontend must pass type checking with zero errors:
 
 ```bash
 {{TYPE_CHECK_COMMAND}}
@@ -255,7 +262,7 @@ az cognitiveservices account keys list -n {{AI_ACCOUNT_NAME}} -g {{RESOURCE_GROU
 Rules:
 
 - `az cli` is for inspection and read-only operations in `{{RESOURCE_GROUP}}`
-  ONLY. Every command targets `-g {{RESOURCE_GROUP}}` explicitly; no other
+  only. Every command targets `-g {{RESOURCE_GROUP}}` explicitly; no other
   resource group may be used, referenced, or created; never deploy application
   code to Azure -- the app runs locally.
 - Key material goes into `{{BACKEND_DIR}}/.env` only -- never into logs,
