@@ -20,7 +20,7 @@ Profiles:
 2. Categorize and cut by priority, using the profile for the file:
 
    **CLAUDE.md profile:**
-   - **Keep:** project-specific commands (build/test/run), critical constraints, non-obvious architectural decisions, environment setup essentials.
+   - **Keep:** project-specific commands (build/test/run), critical constraints together with the reason for each, non-obvious architectural decisions, environment setup essentials.
    - **Keep if space:** code style beyond linting, codebase-specific gotchas, key file locations.
    - **Remove:** general programming advice, explanations of standard tools, verbose examples, aspirational/unenforced guidelines, redundancy, obvious project structure, anything inferable from code or already known to Claude.
 
@@ -29,7 +29,7 @@ Profiles:
    - **Keep if space:** brief config options, common troubleshooting, contributing (or link), license.
    - **Remove:** lengthy architecture (move to docs/), redundant usage examples (keep one + link), changelog content (use CHANGELOG.md), verbose feature lists, non-essential screenshots/badges, anything obvious from code or duplicated elsewhere.
 
-3. Apply compression: consolidate related points, prefer bullets over paragraphs, drop filler/qualifiers, replace examples with patterns, link to docs instead of duplicating. For READMEs also: tables for options/config, a single copy-paste install+run block, collapse optional sections with details/summary where supported.
+3. Apply compression: consolidate related points, prefer bullets over paragraphs, drop filler/qualifiers, replace examples with patterns, link to docs instead of duplicating. For READMEs also: tables for options/config, a single copy-paste install+run block, collapse optional sections with details/summary where supported. For CLAUDE.md, compress around a rule's reason, not through it: an agent reading a bare rule applies it too broadly, so a constraint keeps its "because" even when that costs a line.
 4. Re-measure with `wc -l`. If still over target, loop back to step 2.
 
 ## Effectiveness check

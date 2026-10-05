@@ -7,7 +7,7 @@ allowed-tools: Grep, Glob, Read, Bash
 
 # Verify No Mocks in Production Code
 
-Scan `$1` (default: project root) to confirm production code uses real
+Scan `$0` (default: project root) to confirm production code uses real
 integrations, not mock/stub/dummy data. Exclude test paths: `test/`, `tests/`,
 `__tests__/`, `spec/`, `*_test.*`, `*.test.*`, `*.spec.*`.
 

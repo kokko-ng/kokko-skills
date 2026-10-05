@@ -171,8 +171,7 @@ bash .devcontainer/post-create.sh --config-only
 
 This re-merges the bundled settings and plugin roster into
 `~/.claude/settings.json` (keeping the user's own settings and any plugin they
-explicitly disabled), removes any leftovers of the retired git safety layer,
-re-registers the marketplaces, installs any newly rostered plugin, re-applies
+explicitly disabled), re-registers the marketplaces, installs any newly rostered plugin, re-applies
 the git configuration, and relinks the zsh config. It is idempotent.
 
 Older config without that flag → the script exits 2 on the unknown argument.

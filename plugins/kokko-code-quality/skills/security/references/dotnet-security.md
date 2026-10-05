@@ -20,9 +20,12 @@ dotnet list package --vulnerable --include-transitive
 dotnet list package --vulnerable --format json
 ```
 
-### Enable Security Analyzers
+### Analyzer Configuration (propose, do not apply)
 
-Add to `.csproj` or `Directory.Build.props`:
+The check runs the analyzers the solution already references. When these
+settings are missing, put this block in the report for the user to adopt;
+adding a package reference during a check is a project change. The .NET SDK
+ships the CA rules, so `EnableNETAnalyzers` is enough for them:
 
 ```xml
 <PropertyGroup>
@@ -32,10 +35,9 @@ Add to `.csproj` or `Directory.Build.props`:
 </PropertyGroup>
 
 <ItemGroup>
+  <!-- set Version to the current release on nuget.org -->
   <PackageReference Include="SecurityCodeScan.VS2019"
-                    Version="5.*" PrivateAssets="all" />
-  <PackageReference Include="Microsoft.CodeAnalysis.NetAnalyzers"
-                    Version="8.*" PrivateAssets="all" />
+                    Version="<version>" PrivateAssets="all" />
 </ItemGroup>
 ```
 
@@ -46,7 +48,7 @@ Add to `.csproj` or `Directory.Build.props`:
 dotnet build /warnaserror:SCS0001,SCS0002,SCS0003,SCS0004,SCS0005
 
 # Full build with all warnings visible
-dotnet build -warnaserror
+dotnet build
 ```
 
 ## Common Issues and Fixes
@@ -73,7 +75,7 @@ For each finding, classify as:
 - **TRUE_POSITIVE** - Fix now
 - **NEEDS_REFACTOR** - Create safer abstraction then fix
 - **FALSE_POSITIVE** - Justify and suppress locally
-- **ACCEPT_RISK** - Open tracking issue with rationale
+- **ACCEPT_RISK** - Record the rationale in the report
 
 ## Suppression Pattern
 
@@ -105,5 +107,5 @@ fix(security): mitigate <RuleID> in <file>
 
 ```bash
 dotnet list package --vulnerable
-dotnet build -warnaserror
+dotnet build /warnaserror:SCS0001,SCS0002,SCS0003,SCS0004,SCS0005
 ```

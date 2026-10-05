@@ -36,14 +36,17 @@ Do not install it to run a check. Run `npm audit` plus ESLint's built-in
 rules (`no-eval`, `no-implied-eval`, `no-new-func`, `no-script-url`) for
 this pass, and propose the plugin in the report with the config below:
 
-ESLint config addition:
+ESLint config addition (ESLint 9 flat config):
 
 ```javascript
-{
-  plugins: ['security'],
-  extends: ['plugin:security/recommended-legacy']
-}
+// eslint.config.js
+import pluginSecurity from 'eslint-plugin-security';
+
+export default [pluginSecurity.configs.recommended];
 ```
+
+On an eslintrc project (ESLint 8), use
+`extends: ['plugin:security/recommended-legacy']`.
 
 ## Common Issues and Fixes
 

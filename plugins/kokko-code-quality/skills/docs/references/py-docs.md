@@ -5,10 +5,10 @@
 Nothing is installed into the project. In order (see the shared
 `references/check-workflow.md`):
 
-1. `[tool.ruff]` configured: `uv run ruff check --select D --config 'lint.pydocstyle.convention="google"' .`
+1. interrogate or pydocstyle already dev dependencies: `uv run <tool>`.
+2. `[tool.ruff]` configured: `uv run ruff check --select D --config 'lint.pydocstyle.convention="google"' .`
    reports every missing or malformed docstring (the `D` family is
    pydocstyle) without touching the repo's ruff config.
-2. interrogate or pydocstyle already dev dependencies: `uv run <tool>`.
 3. Otherwise `uvx interrogate` and `uvx pydocstyle`, as below.
 
 ## Commands
@@ -39,7 +39,7 @@ uvx pydocstyle <target_dir> --convention=google
 
 ## Processing Order
 
-Work through files systematically:
+Work through files in this order:
 
 1. Public API functions and classes
 2. Complex functions (high cyclomatic complexity)
@@ -86,11 +86,12 @@ class ClassName:
 
 ## Validation
 
-After fixing each file:
+After fixing each file (use `uv run` instead of `uvx` when the tool is a
+project dependency, Tool selection step 1):
 
 ```bash
-uv run interrogate -v <file.py>
-uv run pydocstyle <file.py> --convention=google
+uvx interrogate -v <file.py>
+uvx pydocstyle <file.py> --convention=google
 ```
 
 ## Commit Format
@@ -110,6 +111,6 @@ docs(<module>): add docstrings to <file>
 ## Final Quality Gate
 
 ```bash
-uv run interrogate -v <target_dir> --fail-under 100
-uv run pydocstyle <target_dir> --convention=google
+uvx interrogate -v <target_dir> --fail-under 100
+uvx pydocstyle <target_dir> --convention=google
 ```

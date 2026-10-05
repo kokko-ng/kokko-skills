@@ -19,9 +19,12 @@ repo inspection, read-only `az cli`, then ask the user. Never invent values.
   entra-id variant:            ENTRA_TEST_ACCOUNT_SOURCE (where automatable test credentials come from)
   azure-ai block only:         AI_ACCOUNT_NAME, DEPLOYMENT_NAME, MODEL_NAME, TPM, API_ENDPOINT
 
-Optional blocks. Delete the whole block -- plus every line elsewhere that
-starts with the block name in brackets, e.g. "[azure-ai]" -- when it does not
-apply. Strip the bracket tags from lines you keep.
+Optional blocks. Delete the whole block when it does not apply, together
+with everything elsewhere tagged with the block name in brackets, e.g.
+"[azure-ai]": a tag at the start of a line, list item, or table row marks
+that whole line; a tag inside a line ("REST [websocket] + WebSocket", a
+diagram box like "[azure-ai: ...]") marks just that fragment. When the block
+applies, keep the content and strip just the tag.
 
   azure-ai      App calls an Azure AI model. Delete if there is no AI integration.
   websocket     App uses WebSockets.
@@ -82,13 +85,15 @@ hand.
   installed, add it first
   (`npm i -D @playwright/test && npx playwright install chromium`).
 - Point both suites at the deployed frontend origin so every request also
-  exercises the nginx `/api` proxy:
+  exercises the nginx `/api` proxy. Run this as one Bash call -- it derives
+  the origin itself, and the subshells keep each suite's `cd` from leaking
+  into the next command:
 
   ```bash
-  export API_BASE_URL="https://$FRONTEND_FQDN"
-  export E2E_BASE_URL="https://$FRONTEND_FQDN"
-  {{API_TEST_COMMAND}}
-  {{E2E_TEST_COMMAND}}
+  FRONTEND_FQDN=$(az containerapp show -g {{RESOURCE_GROUP}} -n {{FRONTEND_APP_NAME}} --query "properties.configuration.ingress.fqdn" -o tsv)
+  export API_BASE_URL="https://$FRONTEND_FQDN" E2E_BASE_URL="https://$FRONTEND_FQDN"
+  ({{API_TEST_COMMAND}})
+  ({{E2E_TEST_COMMAND}})
   ```
 
 - **Frontend smoke checks** are curl assertions: the frontend origin returns
@@ -103,11 +108,13 @@ hand.
   the same result on every re-run.
 - [azure-ai] Assertions on AI-backed endpoints target status codes and
   response structure, never exact model output.
-- Browser automation lives ONLY inside those committed Playwright specs.
-  Do NOT drive a browser yourself or judge outcomes visually: no ad-hoc
-  playwright-cli sessions or one-off page-driving scripts, no Playwright
-  MCP server or `mcp__playwright__*` / `browser_*` tools, no
-  screenshot-based validation. Pixel-level appearance is out of scope
+- Browser automation lives only inside those committed Playwright specs,
+  because a committed spec gives the same verdict on every re-run and a
+  hand-driven session does not. So the browser is not driven by hand and
+  outcomes are not judged visually: no ad-hoc playwright-cli sessions or
+  one-off page-driving scripts, no Playwright MCP server or
+  `mcp__playwright__*` / `browser_*` tools (even when they are connected),
+  no screenshot-based validation. Pixel-level appearance is out of scope
   here -- the aesthetics prompt covers it.
 
 ### Spec Coverage -- Every Story Maps to Tests
@@ -151,9 +158,13 @@ memory does not survive context compaction or fresh-context passes
 
 - **On start:** if the file exists, read it and resume from the first item not
   marked `passed`. If it does not exist, create it with one line per user
-  story in `spec.md` (plus discovery/auth setup lines), all `pending`.
+  story in `spec.md` (plus `S-NN` lines for discovery and auth setup), all
+  `pending`.
 - **Line format:** `US-003 | pending / in-progress / passed / blocked | short note`
-  -- for `blocked`, the note states exactly what is missing and what was tried.
+  (setup lines: `S-01 | pending | discovery`) -- for `blocked`, the note
+  states exactly what is missing and what was tried. Every line starts with
+  an ID of letters, a hyphen, and digits: the kokko-janitor progress-guard
+  hook counts open items by that shape and ignores lines without one.
 - **Update immediately** whenever an item changes state -- never in batches,
   never only at the end.
 - Append one line to a `## Session log` section at the bottom of the file at
@@ -196,14 +207,19 @@ BACKEND_FQDN=$(az containerapp show -g {{RESOURCE_GROUP}} -n {{BACKEND_APP_NAME}
 FRONTEND_FQDN=$(az containerapp show -g {{RESOURCE_GROUP}} -n {{FRONTEND_APP_NAME}} --query "properties.configuration.ingress.fqdn" -o tsv)
 ```
 
+Each Bash call starts a fresh shell -- the working directory carries over,
+variables do not. Every block below that uses `$BACKEND_FQDN` or
+`$FRONTEND_FQDN` starts with the assignment it needs; keep it that way in
+any command you add.
+
 ### Azure CLI Rules
 
-- `az cli` is for inspection, discovery, and read-only operations ONLY: logs,
-  configuration, resource status.
+- `az cli` is for inspection, discovery, and read-only operations only:
+  logs, configuration, resource status.
 - Work exclusively inside `{{RESOURCE_GROUP}}`; it already exists -- never
   recreate it, never touch another resource group.
 - Never deploy code with `az cli` (`az containerapp update --image` etc.) --
-  ALL code changes deploy through GitHub Actions (see Deploying Changes).
+  all code changes deploy through GitHub Actions (see Deploying Changes).
 
 ---
 
@@ -224,6 +240,7 @@ Validate before any feature testing:
 1. Health endpoint is public:
 
    ```bash
+   BACKEND_FQDN=$(az containerapp show -g {{RESOURCE_GROUP}} -n {{BACKEND_APP_NAME}} --query "properties.configuration.ingress.fqdn" -o tsv)
    curl -s -o /dev/null -w "%{http_code}" "https://$BACKEND_FQDN{{HEALTH_ENDPOINT}}"
    # Expected: 200
    ```
@@ -231,6 +248,7 @@ Validate before any feature testing:
 2. Every protected route rejects unauthenticated requests:
 
    ```bash
+   BACKEND_FQDN=$(az containerapp show -g {{RESOURCE_GROUP}} -n {{BACKEND_APP_NAME}} --query "properties.configuration.ingress.fqdn" -o tsv)
    for ROUTE in {{PROTECTED_ROUTES}}; do
      STATUS=$(curl -s -o /dev/null -w "%{http_code}" "https://$BACKEND_FQDN$ROUTE")
      echo "$ROUTE -> $STATUS (expected: 401)"
@@ -290,7 +308,7 @@ client connects with auth and asserts messages stream back correctly.
 
 ## Deploying Changes -- GitHub Actions Only
 
-ALL code deployments go through the GitHub Actions pipeline. Never bypass it
+All code deployments go through the GitHub Actions pipeline. Never bypass it
 with direct `az` deployment commands; if the workflow fails, debug and push a
 fix.
 
@@ -307,14 +325,11 @@ gh run view --log-failed
 After each workflow success, verify deployment health before re-validating:
 
 ```bash
+BACKEND_FQDN=$(az containerapp show -g {{RESOURCE_GROUP}} -n {{BACKEND_APP_NAME}} --query "properties.configuration.ingress.fqdn" -o tsv)
 curl -s "https://$BACKEND_FQDN{{HEALTH_ENDPOINT}}" | jq .
 az containerapp logs show -g {{RESOURCE_GROUP}} -n {{BACKEND_APP_NAME}} --tail 100
 az containerapp revision list -g {{RESOURCE_GROUP}} -n {{BACKEND_APP_NAME}} --output table
 ```
-
-Deploy cycles are slow. When several fixes are independent and low-risk,
-batch them into one push rather than deploying one-by-one -- but never batch
-so much that a failure is hard to attribute.
 
 ---
 

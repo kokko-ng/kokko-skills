@@ -50,10 +50,15 @@ python3 "$R" 'codemap/**/*.c4.json' --check              # checks only, writes n
 
 It is pure standard library. Only `--png` shells out.
 
-Exit code is non-zero when a connector runs behind a node it does not
-terminate on, or a label mask lands on a node. Everything else prints as a
-warning: over budget, more than two focal nodes, a coordinate off the 4px
-grid, an Azure service with no official icon.
+A spec the renderer cannot accept stops the run with a message and a
+non-zero exit, before any later spec renders: an unknown `preset` or
+`kind`, a node on no row or a row naming an unknown node, an edge naming an
+unknown node, an arrow label over 14 characters, or more than three zones.
+For specs it accepts, the exit code is non-zero when a connector runs
+behind a node it does not terminate on, or a label mask lands on a node.
+Everything else prints as a warning: more than 16 nodes, more than two
+focal nodes, a coordinate off the 4px grid, text overflowing its box, an
+Azure service with no official icon.
 
 ---
 
@@ -155,7 +160,7 @@ One file per diagram, named `<level>.c4.json`, beside the `.md` it illustrates:
       "sublabel": "FastAPI · 8000",
       "tag": "API",
       "kind": "focal",
-      "href": "../src/backend/general-chat/"
+      "href": "../../src/backend/general-chat/"
     },
     "aoai": {
       "name": "Azure OpenAI",
@@ -200,7 +205,7 @@ One file per diagram, named `<level>.c4.json`, beside the `.md` it illustrates:
 | `name` | Human-readable label, Inter 600. Wraps to two lines, then truncates — keep it short. |
 | `sublabel` | Technology, port, SKU or index name. Geist Mono. This is where `FastAPI · 8000` goes, not in the name. |
 | `tag` | The type tag in the corner box, uppercase, ten characters or fewer: `API`, `SPA`, `DB`, `PAAS`, `PERSON`, `PKG`. |
-| `kind` | One of the eight treatments in the table above. |
+| `kind` | One of `focal`, `backend`, `store`, `external`, `input`, `optional`, `security`, `retired`; the table above maps C4 elements onto them. |
 | `icon` | Azure or Fabric icon slug, e.g. `container-apps`, `ai-search`, `lakehouse`. Azure and Fabric nodes only. |
 | `href` | Optional link. In a codemap this points at the source directory or the child `.md`, so the HTML page is navigable. Repo-relative, from the diagram's own folder. |
 | `width` | Override the automatic width. Allowed: 120, 140, 160, 180, 200, 240. |

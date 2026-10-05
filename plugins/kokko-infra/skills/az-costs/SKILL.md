@@ -50,7 +50,17 @@ az costmanagement query --type AmortizedCost \
   --scope "/subscriptions/<subscription-id>" \
   --timeframe MonthToDate \
   --dataset-aggregation '{"totalCost":{"name":"PreTaxCost","function":"Sum"}}'
+
+# Last month's total, for the "vs Last Month" line
+az costmanagement query --type ActualCost \
+  --scope "/subscriptions/<subscription-id>" \
+  --timeframe TheLastMonth \
+  --dataset-aggregation '{"totalCost":{"name":"PreTaxCost","function":"Sum"}}'
 ```
+
+"Forecast End of Month" is a straight-line projection of the MTD total
+over the days elapsed; label it as one. If a figure the template asks for
+could not be fetched, write "not available" rather than estimating it.
 
 Fallback if the extension cannot be installed: `az consumption usage list` with a date range.
 

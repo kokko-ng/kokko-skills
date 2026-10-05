@@ -8,7 +8,7 @@ disable-model-invocation: true
 
 # Interactive Dependency Update
 
-Update outdated dependencies safely, validating after each. `$1` filters scope:
+Update outdated dependencies safely, validating after each. `$0` filters scope:
 a package name, or `critical` (security only), `major`, or `minor`. No arg =
 interactive over all outdated packages.
 

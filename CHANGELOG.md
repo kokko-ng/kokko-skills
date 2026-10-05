@@ -6,9 +6,53 @@ Changelog](https://keepachangelog.com/). Releases before 3.6.0 are
 documented in [GitHub
 Releases](https://github.com/kokko-ng/kokko-skills/releases) only.
 
-## Unreleased
+## 5.1.0 - 2026-10-05
+
+Minor: the kokko-viz Insight renderer (below) is new; everything else is
+fixes from a prompt audit against the current Claude models.
+
+### Fixed
+
+- Skills that take a positional argument read `$1`, which in a skill is
+  the *second* argument; the first is `$0`. `/audit`, `/debt`,
+  `/deps-update`, `/emojis`, `/perf`, `/spec`, `/verify-no-mocks`,
+  `/verify-spec`, `/c4-map`, `/c4-update`, `/c4-verify`, and `/az-status`
+  silently ignored their target since the command-to-skill conversion in
+  5.0.0. They now read `$0`.
+- kokko-validation templates no longer rely on shell variables surviving
+  between Bash calls. The Azure SQL admin password is set and handed to the
+  backend Container App in one command (and read back from that secret
+  afterwards) instead of being regenerated, every block derives the FQDNs
+  it uses, the service-principal JSON is piped straight into the GitHub
+  secret instead of read from a file, and the base images move to
+  `node:24-alpine` and `actions/checkout@v5`. Progress lines all carry an
+  ID so the kokko-janitor progress guard counts them.
+- `c4-checker` checked PlantUML files the plugin no longer produces; it now
+  checks renderer output, links, and render pairing. The C4 references say
+  which renderer inputs stop a run and which only warn, matching
+  `render.py`, and `/c4-update` no longer truncates its change list at 50
+  files or fails when `codemap/` was never committed.
+- kokko-code-quality references now follow the shared check contract: no
+  analyzer packages or blanket suppressions added to the project (proposed
+  in the report instead), ACCEPT_RISK recorded in the report, Python tool
+  selection in the contract's order, validation commands that match how the
+  tool ran (`uvx`), ESLint flat-config snippets, and `tsc -p tsconfig.json`.
+- `/release` updates `CHANGELOG.md` in the release PR, as CONTRIBUTING
+  describes. `/verify-docs` no longer runs README commands that deploy,
+  push, or delete. `/az-costs` fetches last month's spend instead of
+  estimating it and labels the forecast as a straight-line projection.
 
 ### Changed
+
+- Prompt text cleaned up for current models: shouted MUST/NEVER/ALWAYS
+  restated at normal volume with the reason beside the rule, and strategy
+  coaching, history narratives, and hand-written search scripts removed
+  where the model's own approach is better. Plugin descriptions say
+  "skills" instead of "commands".
+- `/c4-update` orders its update plan itself instead of spawning an agent
+  for a fixed rule set.
+
+### Added
 
 - **kokko-viz draws in the Insight design system, and PlantUML is gone.**
   Each C4 level is now a JSON spec you author (`context.c4.json`) rendered
