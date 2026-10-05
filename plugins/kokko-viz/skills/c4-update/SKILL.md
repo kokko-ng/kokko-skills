@@ -61,7 +61,7 @@ Update order:
 
 ### Step 1A: Identify System
 
-The system to update is `$1`. If an argument was given, use it as
+The system to update is `$0`. If an argument was given, use it as
 `SYSTEM_ID` and verify `codemap/<SYSTEM_ID>/` exists — report the error and
 stop if it does not. With no argument:
 
@@ -81,10 +81,22 @@ find codemap/$SYSTEM_ID -type f \( -name "*.md" -o -name "*.c4.json" -o -name "*
 
 ### Step 1B: Analyze Changes
 
+The baseline is the last commit that touched `codemap/`:
+
 ```bash
 LAST_UPDATE=$(git log -1 --format="%H" -- codemap/)
-git diff --name-status $LAST_UPDATE..HEAD -- . ':!codemap' ':!*.md' | head -50
+if [ -n "$LAST_UPDATE" ]; then
+  git diff --name-status "$LAST_UPDATE"..HEAD -- . ':!codemap' ':!*.md'
+else
+  echo "no baseline: codemap/ has never been committed"
+  git ls-files -- . ':!codemap' ':!*.md'
+fi
 ```
+
+Pass the whole list to Step 1C; do not truncate it. When it is long, group
+it by top-level directory in the brief rather than dropping entries. With no
+baseline, every tracked file is a candidate, so Step 1C compares the existing
+model against the current code instead of against a diff.
 
 ### Step 1C: Categorize Changes
 
@@ -125,30 +137,10 @@ Wait for Phase 1. If no changes detected, report and exit.
 
 ## Phase 2: Impact Analysis
 
-```yaml
-Tool: Agent
-Parameters:
-  subagent_type: "kokko-viz:c4-checker"
-  description: "Plan C4 updates"
-  prompt: |
-    Create update execution plan.
-
-    PHASE 1 OUTPUT: <insert>
-
-    PLANNING RULES:
-    1. DELETIONS (bottom-up): component -> container -> context
-    2. MODIFICATIONS: affected level + adjacent levels
-    3. ADDITIONS (top-down): context -> container -> component
-    4. PARALLEL: Same-level operations can run in parallel
-
-    OUTPUT:
-    {
-      "EXECUTION_PLAN": [
-        {"step": N, "phase": "...", "depends_on": [], "tasks": [...]}
-      ],
-      "SUBAGENT_SPAWNS": {"sequential": [], "parallel_safe": []}
-    }
-```
+Order the Phase 1 `CHANGES` into an execution plan yourself, by the update
+order above: the order follows from each change's type and level, so it
+needs no agent. Operations on the same level are independent and can run as
+parallel agents in Phase 3.
 
 ---
 
@@ -243,7 +235,7 @@ Parameters:
 3. **Re-render** every modified diagram, and check the whole model:
 
    ```bash
-   python3 codemap/.insight-c4/render.py codemap/$SYSTEM_ID/context.c4.json --png
+   python3 codemap/.insight-c4/render.py <each modified .c4.json> --png
    python3 codemap/.insight-c4/render.py 'codemap/**/*.c4.json' --check
    ```
 

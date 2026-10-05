@@ -5,12 +5,13 @@
 Nothing is installed into the project. In order (see the shared
 `references/check-workflow.md`):
 
-1. `[tool.ruff]` configured: `uv run ruff check --select C901,PLR09 .`
+1. radon already a dev dependency: `uv run radon`.
+2. `[tool.ruff]` configured: `uv run ruff check --select C901,PLR09 .`
    reports functions over the mccabe threshold (10) plus too many branches,
    arguments, and statements, without touching the repo's ruff config.
-2. radon already a dev dependency: `uv run radon`.
-3. Otherwise `uvx radon`, as below. Ruff has no maintainability index, so
-   radon `mi` still runs for that signal.
+   Ruff has no maintainability index, so radon `mi` still runs for that
+   signal.
+3. Otherwise `uvx radon`, as below.
 
 ## Commands
 

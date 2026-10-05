@@ -5,10 +5,10 @@
 Nothing is installed into the project. In order (see the shared
 `references/check-workflow.md`):
 
-1. `[tool.ruff]` configured: ruff's `S` family is flake8-bandit and reports
+1. bandit already a dev dependency or pre-commit hook: `uv run bandit`.
+2. `[tool.ruff]` configured: ruff's `S` family is flake8-bandit and reports
    the same tests as `S<number>` (bandit's `B<number>`):
    `uv run ruff check --select S .` (do not edit the repo's ruff config).
-2. bandit already a dev dependency or pre-commit hook: `uv run bandit`.
 3. Otherwise run it ephemerally: `uvx bandit`, as in the commands below.
 
 ## Commands
@@ -46,7 +46,7 @@ For each finding, classify as:
 - **TRUE_POSITIVE** - Fix now
 - **NEEDS_REFACTOR** - Create safer abstraction then fix
 - **FALSE_POSITIVE** - Justify and suppress locally
-- **ACCEPT_RISK** - Open tracking issue with rationale
+- **ACCEPT_RISK** - Record the rationale in the report
 
 ## Suppression Pattern
 

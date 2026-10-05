@@ -121,6 +121,3 @@ Then end with exactly this, because the new versions are on disk but not in the
 session:
 
 > Plugins updated. Run **`/reload-plugins`** to load them into this session.
-
-If a plugin ships hooks (`kokko-notifications`), note that hook
-changes need a full Claude Code restart, not just a reload.

@@ -2,14 +2,14 @@
 name: debt
 description: Deep-read a target to identify technical debt and build a remediation roadmap.
 argument-hint: '[target]'
-allowed-tools: Read, Grep, Glob, Bash, Task
+allowed-tools: Read, Grep, Glob, Bash, Agent
 ---
 
 # Technical Debt Analysis
 
-Deep-read `$1` (default when empty: entire project) to surface technical debt
+Deep-read `$0` (default when empty: entire project) to surface technical debt
 and produce a prioritized remediation roadmap. For large targets, fan out with
-the Task tool (subagent_type: Explore) per module and synthesize results.
+the Agent tool (subagent_type: Explore) per module and synthesize results.
 
 ## Read Systematically
 

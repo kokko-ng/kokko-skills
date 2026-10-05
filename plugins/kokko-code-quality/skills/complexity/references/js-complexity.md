@@ -23,9 +23,10 @@ Target functions with:
 - Deep nesting levels (> 3)
 - High cognitive complexity
 
-## Configure ESLint Rules
+## ESLint Rules (propose, do not apply)
 
-Add to ESLint config:
+The command-line `--rule` above runs the check without a config change.
+To make the rules permanent, propose these in the report:
 
 ```javascript
 {
@@ -76,5 +77,5 @@ refactor(complexity): reduce complexity in <function>
 
 ```bash
 npx eslint .
-npm run build 2>/dev/null || npm run build:check 2>/dev/null || true
+npm run build   # when package.json defines a build script
 ```

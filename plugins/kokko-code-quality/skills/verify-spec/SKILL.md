@@ -7,7 +7,7 @@ allowed-tools: Read, Grep, Glob, Bash
 
 # Verify Test Specification
 
-Validate the spec file `$1` (default: `./spec.md`). Report an error if it is
+Validate the spec file `$0` (default: `./spec.md`). Report an error if it is
 missing or unparseable.
 
 ## Checks

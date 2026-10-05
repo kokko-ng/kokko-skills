@@ -37,7 +37,7 @@ dotnet build
 
 ## Processing Order
 
-Work through files systematically:
+Work through files in this order:
 
 1. Public API classes and interfaces
 2. Public methods on controllers/services
@@ -135,25 +135,18 @@ public override string ToString()
 }
 ```
 
-## Configure Scope
+## Generated Code
 
-Exclude assemblies from documentation requirements:
-
-```xml
-<PropertyGroup>
-  <GenerateDocumentationFile>false</GenerateDocumentationFile>
-</PropertyGroup>
-```
-
-Or exclude types in `.editorconfig`:
+Generated code (EF Core migrations, source-generator output) is not public
+API to document. When the repo does not already exclude it, propose a
+path-scoped `.editorconfig` entry in the report:
 
 ```ini
-[**/Internal/**/*.cs]
-dotnet_diagnostic.CS1591.severity = none
-
 [**/Migrations/*.cs]
 dotnet_diagnostic.CS1591.severity = none
 ```
+
+Hand-written public symbols are documented, never excluded.
 
 ## Validation
 
@@ -173,7 +166,7 @@ docs(<namespace>): add XML docs to <type>
 
 | Issue | Resolution |
 | ----- | ---------- |
-| CS1591 on generated code | Exclude from documentation requirements |
+| CS1591 on generated code | Propose the exclusion above in the report |
 | CS1574 cref not found | Add full namespace or using directive |
 | Too many warnings | Process namespace by namespace |
 

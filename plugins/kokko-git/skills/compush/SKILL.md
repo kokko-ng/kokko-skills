@@ -19,7 +19,7 @@ git status
 git diff --stat
 ```
 
-Keep commits small and modular — ONE logical change each. Split unrelated work (config vs code, refactor vs feature, file moves vs edits) into separate commits. If the subject needs an "and", split it. Never `--amend` to combine unrelated changes.
+Keep commits small and modular — one logical change each. Split unrelated work (config vs code, refactor vs feature, file moves vs edits) into separate commits. If the subject needs an "and", split it. Never `--amend` to combine unrelated changes.
 
 Stage only the files for this change, by explicit path — never `git add .`
 or `-A` (they sweep in untracked files). When one file mixes concerns, `git add -p` will not work
@@ -58,7 +58,7 @@ and connection strings:
 git diff --cached
 ```
 
-If anything is flagged, unstage and remove it (use env vars / secret management). NEVER commit secrets.
+If anything is flagged, unstage and remove it (use env vars / secret management). Never commit secrets.
 
 ### 3. Run quality checks
 
@@ -92,7 +92,7 @@ git push -u origin $(git branch --show-current)
 ```
 
 - Push rejected (non-fast-forward) → the remote has commits you do not have.
-  A rejected push is usually correct: do NOT pull, rebase, merge, or force
+  A rejected push is usually correct: do not pull, rebase, merge, or force
   anything on your own. Fetch and show the divergence, then stop and let the
   user decide how to integrate:
 

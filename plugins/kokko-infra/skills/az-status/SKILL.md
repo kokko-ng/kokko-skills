@@ -8,14 +8,14 @@ disable-model-invocation: true
 
 # Azure Daily Summary
 
-Generate a daily summary of Azure subscription activity and health. `$1` is the subscription to analyze; `--days N` sets the lookback window (default: 1). Use the chosen lookback as `<days>` in every command below.
+Generate a daily summary of Azure subscription activity and health. `$0` is the subscription to analyze; `--days N` sets the lookback window (default: 1). Use the chosen lookback as `<days>` in every command below.
 
 ## Confirm the scope first
 
 Confirm the subscription (and, where relevant, the resource group scope)
 with AskUserQuestion before running any command — `az account set` below
 changes the CLI's active subscription, and the default is often not the one
-the user means. When `$1` names a subscription, confirm that one rather than
+the user means. When `$0` names a subscription, confirm that one rather than
 asking the user to pick again.
 
 ## Steps

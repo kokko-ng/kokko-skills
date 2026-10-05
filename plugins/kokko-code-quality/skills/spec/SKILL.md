@@ -7,7 +7,7 @@ allowed-tools: Read, Write, Glob, Grep
 
 # Create Test Specification
 
-Analyze `$1` (default: current project) and write a spec file (default:
+Analyze `$0` (default: current project) and write a spec file (default:
 `spec.md`, override with `--output`) documenting testable user stories.
 
 ## Analyze

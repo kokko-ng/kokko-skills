@@ -2,17 +2,17 @@
 name: audit
 description: Perform a direct, no-nonsense code review with a clear merge verdict.
 argument-hint: '[target]'
-allowed-tools: Bash(git:*), Read, Grep, Task
+allowed-tools: Bash(git:*), Read, Grep, Agent
 ---
 
 # Honest Code Review
 
-Review `$1` (default when empty: the ENTIRE codebase) directly, without
-diplomatic softening. The review covers the whole codebase as it exists on
-disk — never just a diff, a commit, a PR, or a branch. `$1` may narrow the
-scope to a directory or file path, but never to a revision range. For large
-targets, fan out with the Task tool (subagent_type: Explore) per file or
-module and synthesize results.
+Review `$0` (default when empty: the entire codebase) directly, without
+diplomatic softening. The review covers the codebase as it exists on disk,
+not a diff, commit, PR, or branch (Claude Code's built-in `/review` covers
+pull requests). `$0` may narrow the scope to a directory or file path, not
+to a revision range. For large targets, fan out with the Agent tool
+(subagent_type: Explore) per file or module and synthesize results.
 
 ## Evaluate Against
 

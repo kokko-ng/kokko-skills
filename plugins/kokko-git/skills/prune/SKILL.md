@@ -89,8 +89,8 @@ Report counts of deleted local, deleted remote, and kept branches. Optionally `g
 
 ## Safety Rules
 
-- NEVER delete the default branch, master, or the current branch.
-- NEVER run `git branch -D` or `git push origin --delete` yourself — print
+- Never delete the default branch, master, or the current branch.
+- Never run `git branch -D` or `git push origin --delete` yourself — print
   approved force/remote deletions for the user to run (see step 5).
 - Always show what will be deleted before doing it.
 - Skip branches with unpushed commits unless the user confirms.

@@ -2,7 +2,7 @@
 name: release
 description: Bump version across all files and open/merge a PR; the Release workflow publishes.
 argument-hint: '[patch|minor|major] [--version x.y.z]'
-allowed-tools: Bash(git:*), Bash(gh:*), Bash(bash:*), Bash(grep:*), Read, Edit, Grep, Glob, AskUserQuestion, mcp__github__create_pull_request, mcp__github__merge_pull_request, mcp__github__pull_request_read, mcp__github__list_releases, mcp__github__actions_list, mcp__github__get_job_logs
+allowed-tools: Bash(git:*), Bash(gh:*), Bash(bash:*), Bash(grep:*), Bash(jq:*), Read, Edit, Grep, Glob, AskUserQuestion, mcp__github__create_pull_request, mcp__github__merge_pull_request, mcp__github__pull_request_read, mcp__github__list_releases, mcp__github__actions_list, mcp__github__get_job_logs
 disable-model-invocation: true
 ---
 
@@ -34,7 +34,7 @@ git describe --tags --abbrev=0
 
 Semantic versioning: patch = Z+1 (fixes), minor = Y+1/Z=0 (features), major = X+1/Y=0/Z=0 (breaking).
 
-### 3. Update ALL version references
+### 3. Update every version reference
 
 If `scripts/bump-version.sh` exists (it does in kokko-skills), use it — it
 rewrites every plugin manifest and marketplace entry in lock-step and ends
@@ -52,6 +52,10 @@ git diff
 ```
 
 ### 4. Create the version-bump PR
+
+If the repo keeps a `CHANGELOG.md`, rename its `## Unreleased` heading to
+`## X.Y.Z - YYYY-MM-DD` (or add an entry for X.Y.Z if there is none) so the
+changelog ships in the same PR as the bump.
 
 Branch, commit, and push. Stage the modified files by explicit path from the
 `git status` output — never `git add .` (it sweeps in untracked files):
@@ -75,7 +79,7 @@ Run quality checks and wait for CI. Then **confirm with AskUserQuestion before m
 This command's job ends at the version bump + merge. Publishing is owned by
 the Release workflow (`.github/workflows/release.yml`): after the merge lands
 on `main` and CI succeeds, the workflow creates the `vX.Y.Z` GitHub release
-automatically. Do NOT run `gh release create` or push tags by hand.
+automatically. Do not run `gh release create` or push tags by hand.
 
 Monitor the CI and Release workflow runs (`mcp__github__actions_list` /
 `mcp__github__get_job_logs`, or `gh run list`) and confirm the release exists
@@ -85,6 +89,5 @@ publishing manually.
 
 ## Notes
 
-- Update ALL version refs consistently; keep the with/without `v` convention.
 - No emojis or attribution footers in commits or release notes.
 - Version not found → search manually and add the file to the update set.

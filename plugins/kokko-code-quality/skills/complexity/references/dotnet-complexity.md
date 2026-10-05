@@ -4,9 +4,11 @@
 
 - .NET SDK 6.0+
 
-## Enable Code Metrics Analyzers
+## Code Metrics Analyzers (propose, do not apply)
 
-Add to `.csproj` or `Directory.Build.props`:
+When the solution does not enable these, propose the block for `.csproj` or
+`Directory.Build.props` in the report; editing project configuration during
+a check is a project change:
 
 ```xml
 <PropertyGroup>
@@ -28,12 +30,13 @@ dotnet msbuild /t:Metrics
 ## Key Complexity Rules
 
 - **CA1502** - Cyclomatic complexity too high (default > 25)
-- **CA1505** - Maintainability index too low (< 20)
+- **CA1505** - Maintainability index too low (default < 10)
 - **CA1506** - Class coupling too high (> 95)
 
-## Configure Thresholds
+## Thresholds (propose, do not apply)
 
-Create or update `.editorconfig`:
+When the repo's `.editorconfig` does not set these, propose them in the
+report:
 
 ```ini
 [*.cs]
