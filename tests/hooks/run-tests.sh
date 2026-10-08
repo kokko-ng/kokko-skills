@@ -134,6 +134,18 @@ for sound in warning completion attention; do
     fi
 done
 
+# KOKKO_SOUND_EVENTS picks which sound types play; unset means all of them.
+for case in "|completion|yes" "|attention|yes" "completion|completion|yes" \
+            "completion|attention|no" "completion, attention|attention|yes" "attention|completion|no"; do
+    IFS='|' read -r events sound expected <<<"$case"
+    if env KOKKO_SOUND_EVENTS="$events" "$BASH" -c "source '$PLAY_SOUND'; sound_wanted $sound"; then got=yes; else got=no; fi
+    if [ "$got" = "$expected" ]; then
+        record PASS "play-sound: KOKKO_SOUND_EVENTS='$events' plays $sound: $expected"
+    else
+        record FAIL "play-sound: KOKKO_SOUND_EVENTS='$events' plays $sound: $expected" "got=$got"
+    fi
+done
+
 # ---------------------------------------------------------------------------
 # Report
 # ---------------------------------------------------------------------------

@@ -6,6 +6,15 @@ Changelog](https://keepachangelog.com/). Releases before 3.6.0 are
 documented in [GitHub
 Releases](https://github.com/kokko-ng/kokko-skills/releases) only.
 
+## 5.2.0 - 2026-10-08
+
+### Added
+
+- kokko-notifications: `KOKKO_SOUND_EVENTS` picks which sounds play, as a
+  comma-separated list of sound types. `KOKKO_SOUND_EVENTS=completion` keeps
+  the chime when Claude finishes a turn and silences the "needs you" sound
+  (permission prompts, questions, idle). Unset, both play, as before.
+
 ## 5.1.0 - 2026-10-05
 
 Minor: the kokko-viz Insight renderer (below) is new; everything else is
