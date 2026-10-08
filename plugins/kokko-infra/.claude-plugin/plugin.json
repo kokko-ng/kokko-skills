@@ -1,6 +1,6 @@
 {
   "name": "kokko-infra",
-  "version": "5.1.0",
+  "version": "5.2.0",
   "description": "Azure infrastructure skills for checking resource costs and service status.",
   "author": {
     "name": "kokko-ng"
