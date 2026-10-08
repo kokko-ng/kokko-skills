@@ -26,4 +26,5 @@ back to a terminal bell in containers.
 | Environment Variable | Default | Purpose |
 | -------------------- | ------- | ------- |
 | `KOKKO_SOUNDS` | `on` | Set to `off` to mute all hook sounds |
+| `KOKKO_SOUND_EVENTS` | all | Comma-separated sound types to play: `completion` (turn finished), `attention` (Claude needs you). `completion` alone chimes only when Claude is done |
 | `KOKKO_SOUND_VOLUME` | `1.0` | afplay gain multiplier (macOS); `1.0` = unity |

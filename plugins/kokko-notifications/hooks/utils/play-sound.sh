@@ -2,6 +2,18 @@
 # play-sound.sh - Cross-platform sound utility for Claude Code hooks
 # Supports: macOS (afplay), Linux (paplay/aplay/speaker-test/bell), Windows/WSL (PowerShell)
 
+# sound_wanted <type> - whether KOKKO_SOUND_EVENTS lets this sound play.
+# A comma-separated list of sound types (completion, attention, ...); unset
+# means every type. KOKKO_SOUND_EVENTS=completion keeps only the chime at the
+# end of a turn and silences the "needs you" sound.
+sound_wanted() {
+    [ -z "${KOKKO_SOUND_EVENTS:-}" ] && return 0
+    case ",${KOKKO_SOUND_EVENTS// /}," in
+        *",$1,"*) return 0 ;;
+        *) return 1 ;;
+    esac
+}
+
 play_sound() {
     local sound_type="${1:-info}"
     local os_type
@@ -10,6 +22,7 @@ play_sound() {
     # a test sweep over the deny paths otherwise fires dozens of alerts at the
     # machine, which is how you learn the default volume was 10x.
     [ "${KOKKO_SOUNDS:-on}" = "off" ] && return 0
+    sound_wanted "$sound_type" || return 0
 
     os_type=$(uname -s)
 
