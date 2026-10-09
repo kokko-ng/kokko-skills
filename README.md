@@ -62,6 +62,7 @@ and honors:
 | Environment Variable | Default | Purpose |
 | -------------------- | ------- | ------- |
 | `KOKKO_SOUNDS` | `on` | Set to `off` to mute all hook sounds |
+| `KOKKO_SOUND_EVENTS` | all | Comma-separated sound types to play: `completion`, `attention` |
 | `KOKKO_SOUND_VOLUME` | `1.0` | afplay gain multiplier (macOS); `1.0` = system default |
 
 ## Plugins
@@ -170,8 +171,8 @@ Set up a dev environment, then keep it current without rebuilding it. See
 
 | Skill | Purpose |
 | ----- | ------- |
-| `/devcontainer-setup [target-directory] [--ref <branch-or-tag>] [--docs] [--no-up]` † | Install the kokko-ng/kokko-devcontainer starter into a directory (defaults to the current one), tailor it to that project, and bring the container up |
-| `/devcontainer-update [--check] [--ref <branch-or-tag>] [--all]` † | Refresh this project's devcontainer config from kokko-ng/kokko-devcontainer and apply it to the running container without a rebuild |
+| `/devcontainer-setup [target-directory] [--ref <branch-or-tag>] [--no-up]` † | Install the kokko-ng/kokko-devcontainer template into a directory (defaults to the current one), with template answers that match that project, and bring the container up with dev |
+| `/devcontainer-update [--check] [--ref <branch-or-tag>] [--all]` † | Merge newer kokko-ng/kokko-devcontainer template changes into this project's .devcontainer/ and apply what can go live without a rebuild |
 | `/plugins-update [--check] [--all] [<plugin@marketplace> ...]` † | Update Claude Code plugins to the latest marketplace versions, then prompt to run /reload-plugins |
 
 † user-invoked only (`disable-model-invocation`) · ‡ runs forked, reports a summary
@@ -180,6 +181,6 @@ Set up a dev environment, then keep it current without rebuilding it. See
 
 `devcontainer-setup` is the first-time install and runs on the host;
 `/devcontainer-update` is the follow-up for a project that already has a
-`.devcontainer/`, applied by re-running the project's own
-`post-create.sh --config-only`. A `.devcontainer/` copied before that flag
-existed needs updating first; the skill detects this and says so.
+`.devcontainer/`: it merges the template changes since the project last took
+it and applies the config live with the project's own
+`post-create.sh --config-only`.

@@ -2,9 +2,8 @@
 
 Dev environment setup and maintenance: install the
 [kokko-ng/kokko-devcontainer](https://github.com/kokko-ng/kokko-devcontainer)
-starter into a project, refresh the devcontainer config inside a running
-container, and update Claude Code plugins to their latest marketplace
-versions.
+template into a project, merge newer template changes into its devcontainer
+config, and update Claude Code plugins to their latest marketplace versions.
 
 ```bash
 /plugin install kokko-env@kokko-ng-kokko-cmds
@@ -16,16 +15,18 @@ versions.
 
 | Skill | Purpose |
 | ----- | ------- |
-| `/devcontainer-setup [target-directory] [--ref <branch-or-tag>] [--docs] [--no-up]` † | Install the kokko-ng/kokko-devcontainer starter into a directory (defaults to the current one), tailor it to that project, and bring the container up |
-| `/devcontainer-update [--check] [--ref <branch-or-tag>] [--all]` † | Refresh this project's devcontainer config from kokko-ng/kokko-devcontainer and apply it to the running container without a rebuild |
+| `/devcontainer-setup [target-directory] [--ref <branch-or-tag>] [--no-up]` † | Install the kokko-ng/kokko-devcontainer template into a directory (defaults to the current one), with template answers that match that project, and bring the container up with dev |
+| `/devcontainer-update [--check] [--ref <branch-or-tag>] [--all]` † | Merge newer kokko-ng/kokko-devcontainer template changes into this project's .devcontainer/ and apply what can go live without a rebuild |
 | `/plugins-update [--check] [--all] [<plugin@marketplace> ...]` † | Update Claude Code plugins to the latest marketplace versions, then prompt to run /reload-plugins |
 
 † user-invoked only (`disable-model-invocation`) · ‡ runs forked, reports a summary
 
 <!-- generated:skills end -->
 
-`devcontainer-setup` is the first-time install and runs on the host;
-`/devcontainer-update` is the follow-up for a project that already has a
-`.devcontainer/`. It applies config by re-running the project's own
-`post-create.sh --config-only`; a `.devcontainer/` copied before that flag
-existed needs updating first, and the skill detects this and says so.
+`devcontainer-setup` is the first-time install and runs on the host: it
+renders the cookiecutter template with answers read from the project and
+starts the container with `dev`. `/devcontainer-update` is the follow-up for
+a project that already has a `.devcontainer/`: it three-way merges the
+template changes since the project last took it, then applies the config
+live with the project's own `post-create.sh --config-only` and lists what
+needs a `dev rebuild`.

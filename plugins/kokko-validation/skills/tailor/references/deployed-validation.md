@@ -283,7 +283,8 @@ behavior first, then validate against it:
 
 Validate before any feature testing:
 
-1. `https://$BACKEND_FQDN{{HEALTH_ENDPOINT}}` returns 200 with no credentials.
+1. `https://$BACKEND_FQDN{{HEALTH_ENDPOINT}}` returns 200 with no credentials
+   (derive `BACKEND_FQDN` in the same command, as in Discovery).
 2. An unauthenticated request to a protected page redirects to the Entra
    sign-in page; an unauthenticated API request is rejected.
 3. Sign-in completes deterministically: a Playwright spec signs in as the

@@ -310,8 +310,9 @@ Common slugs for the services that show up in a codemap:
 `virtual-networks` · `kubernetes-services` · `browser` · `globe` · `users`
 
 If a service is not in the pack, download the current official set from
-`https://learn.microsoft.com/azure/architecture/icons/`, copy the file into the
-skill's `assets/azure-icons/` unmodified, and use its slug. Never recolour,
+`https://learn.microsoft.com/azure/architecture/icons/`, copy the file
+unmodified into the `insight-diagram-design` skill's `assets/azure-icons/`
+(the folder the renderer searches), and use its slug. Never recolour,
 crop or approximate one — Microsoft's terms forbid it and the renderer's
 warning is the honest answer.
 

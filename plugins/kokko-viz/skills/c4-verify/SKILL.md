@@ -31,8 +31,8 @@ Read the relevant section yourself whenever a check cites a
 `c4-templates.md#...` or `insight-diagrams.md#...` anchor.
 
 Diagrams are Insight-branded and generated from `<level>.c4.json` specs.
-A `.puml` or a `.c4-plantuml/` directory under `codemap/` is a migration
-leftover: convert it per `c4-templates.md#migrating-a-plantuml-codemap` and
+A `.puml` under `codemap/`, or the `codemap/.c4-plantuml/` library, is a
+migration leftover: convert it per `c4-templates.md#migrating-a-plantuml-codemap` and
 delete it. That conversion is a structural fix, so it runs in Phase 4A.
 
 This skill runs forked: check output stays here and the caller receives the
@@ -66,6 +66,10 @@ ls codemap/
 - More than one → stop and list the systems, and say the run must be
   repeated with the system id as the argument. Never guess by taking the
   first.
+
+Each Bash call starts a fresh shell, so `$SYSTEM_ID` set in one command is
+empty in the next: write the resolved id into every command below that uses
+it.
 
 ```bash
 echo "System ID: $SYSTEM_ID"
@@ -134,8 +138,9 @@ find . -name "*.c4.json" | while read -r spec; do
     [ -f "$b.$ext" ] && [ "$spec" -nt "$b.$ext" ] && echo "stale: $b.$ext"
   done
 done
-find . -name "*.puml" -o -name ".c4-plantuml" | sed 's/^/plantuml_leftover: /'
+find . -name "*.puml" | sed 's/^/plantuml_leftover: /'
 cd - >/dev/null
+ls -d codemap/.c4-plantuml 2>/dev/null | sed 's/^/plantuml_leftover: /'
 ```
 
 Record its output as the fifth check's findings (`missing`, `orphan`,
@@ -192,7 +197,7 @@ Execute `correction_plan` in order.
 **4A. Structural:** `mkdir -p <paths>` for missing folders; `rm -rf <paths>`
 for orphans. Convert any `.puml` to a `<level>.c4.json` per
 `c4-templates.md#migrating-a-plantuml-codemap`, then delete the `.puml` and
-the `.c4-plantuml/` directory — never leave both formats in the tree.
+the `codemap/.c4-plantuml/` directory — never leave both formats in the tree.
 
 **4B. Diagrams:** for each fix, spawn a `kokko-viz:c4-mapper` agent given
 the file path, current content, the TEMPLATES path, and the fixes from the

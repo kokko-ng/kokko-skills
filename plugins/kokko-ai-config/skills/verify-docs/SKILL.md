@@ -24,7 +24,8 @@ Audit a documentation file so it accurately reflects the current codebase, then 
    - Config files, env vars, and documented settings exist and match.
 3. **Find missing essentials:** entry points / how to run, test commands and frameworks, required env vars (grep `process.env`, `os.environ`, `os.Getenv`), system dependencies (databases/services), default ports, key architectural patterns, external services (APIs, DBs), common setup errors.
 4. **Check links** (README profile especially):
-   - Internal: `grep -oE '\[.*\]\((\.?/[^)]+)\)' <path> | grep -oE '\(.*\)' | tr -d '()' | while read p; do [ ! -e "$p" ] && echo "Broken: $p"; done`
+   - Internal: every relative link and image target exists, resolved from
+     the file's own directory rather than the current one.
    - External: fetch each URL (docs, resources, badges, repo links) and confirm it resolves.
 5. **Flag outdated content:** references to deleted files, deprecated commands/workflows, old versions, stale screenshots, obsolete config.
 6. **Update** the file: remove outdated info, correct commands/paths/versions, fix broken links, add missing critical context.

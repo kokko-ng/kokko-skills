@@ -74,6 +74,10 @@ ls codemap/
   repeated with the system id as the argument. Never guess by taking the
   first.
 
+Each Bash call starts a fresh shell, so `$SYSTEM_ID` set in one command is
+empty in the next: write the resolved id into every command below that uses
+it.
+
 ```bash
 echo "System ID: $SYSTEM_ID"
 find codemap/$SYSTEM_ID -type f \( -name "*.md" -o -name "*.c4.json" -o -name "*.puml" \) | sort

@@ -34,7 +34,7 @@ codemap/
                     └── component.md
 ```
 
-A `.puml` file or a `.c4-plantuml/` directory found here is a leftover;
+A `.puml` file here, or a `codemap/.c4-plantuml/` library, is a leftover;
 convert it per `#migrating-a-plantuml-codemap`.
 
 ---
@@ -149,8 +149,8 @@ phase needs from it:
 - **Which treatment a C4 element takes** — `insight-diagrams.md#c4-to-insight`.
   `Person` is `input`, `System_Ext` is `external` and carries its official
   Azure or Fabric icon, `ContainerDb` is `store`, a `Component` is `backend`
-  and carries no icon, a boundary is a zone, and exactly one node per diagram
-  is `focal`.
+  and carries no icon, a boundary is a zone, and one node per diagram is
+  `focal` (two at the very most).
 - **The spec schema** — `insight-diagrams.md#spec-schema`. A phase that
   produces a diagram produces a `<level>.c4.json`, not SVG and not PlantUML.
 
@@ -265,7 +265,7 @@ document's own location, so the links resolve when browsing the repo on
 GitHub:
 
 ```markdown
-<!-- from codemap/<system-id>/containers/<container>/component.md -->
+<!-- from codemap/<system-id>/containers/<container>/container.md -->
 | Component | Source |
 |-----------|--------|
 | Database layer | [`db.py`](../../../../market_research_agent/db.py) |
@@ -331,7 +331,8 @@ makes everything look stale.
 
 ### Migrating a PlantUML codemap
 
-An older model has `.puml` files and a `.c4-plantuml/` library. Convert it:
+An older model has `.puml` files and a `codemap/.c4-plantuml/` library.
+Convert it:
 
 1. Read each `.puml` and translate it to a `<level>.c4.json` — the macros map
    one to one onto node kinds (`insight-diagrams.md#c4-to-insight`), and the
@@ -340,7 +341,8 @@ An older model has `.puml` files and a `.c4-plantuml/` library. Convert it:
 2. Assign rows. This is the one judgment call: PlantUML had no layout, so the
    row order is new information. `insight-diagrams.md#row-design` gives the
    convention per level.
-3. Render, check, then `rm` the `.puml` and the `.c4-plantuml/` directory.
+3. Render, check, then `rm` the `.puml` and the `codemap/.c4-plantuml/`
+   directory.
 4. Update every `.md` diagram section and `codemap/README.md`.
 
 Do not keep both formats. Two sources of record diverge within a week.

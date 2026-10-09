@@ -1,199 +1,238 @@
 ---
 name: devcontainer-update
-description: Refresh this project's devcontainer config from kokko-ng/kokko-devcontainer and apply it to the running container without a rebuild.
+description: Merge newer kokko-ng/kokko-devcontainer template changes into this project's .devcontainer/ and apply what can go live without a rebuild.
 argument-hint: '[--check] [--ref <branch-or-tag>] [--all]'
-allowed-tools: Bash(git:*), Bash(bash:*), Bash(diff:*), Bash(cp:*), Bash(mkdir:*), Bash(rm:*), Bash(ls:*), Bash(find:*), Bash(cat:*), Bash(jq:*), Read, Write, Edit
+allowed-tools: Bash(git:*), Bash(bash:*), Bash(diff:*), Bash(cp:*), Bash(mkdir:*), Bash(rm:*), Bash(ls:*), Bash(find:*), Bash(cat:*), Bash(jq:*), Bash(uvx:*), Bash(devcontainer:*), Read, Write, Edit
 disable-model-invocation: true
 ---
 
 # Update the Devcontainer Config
 
-Pull the latest `.devcontainer/` from
+Bring this project's `.devcontainer/` up to date with the
 [kokko-ng/kokko-devcontainer](https://github.com/kokko-ng/kokko-devcontainer)
-into this project and apply everything that can take effect **without rebuilding
-the container**. Run it from inside the devcontainer.
+cookiecutter template, and apply everything that can take effect **without
+rebuilding the container**. Run it inside the devcontainer or on the host.
+
+The update is a three-way merge. The template is rendered twice with the
+answers this project was generated with: once at the template version the
+project last took, once at the new one. The difference between the two renders
+is merged into the project's files, so the project's own edits survive.
 
 `$ARGUMENTS`:
 
 | Flag | Effect |
 | ---- | ------ |
 | `--check` | Report the drift and stop. Change nothing. |
-| `--ref <branch-or-tag>` | Compare against that ref instead of the default branch. |
-| `--all` | Also offer the root-level docs (`README.md`, `INSTRUCTIONS.md`, `MANAGING.md`, `ghostty/`). Off by default — most projects have their own. |
+| `--ref <branch-or-tag>` | Merge toward that template ref instead of `main`. |
+| `--all` | Also merge the template's `CLAUDE.md` into the project's own. Off by default: most projects have rewritten theirs. |
 
-## What this can and cannot do
+## What goes live and what needs a rebuild
 
-Applied live by this command:
+Applied live by `post-create.sh --config-only` (step 7):
 
-- `.devcontainer/config/claude/**` — `CLAUDE.md`, `settings.json` (permission
-  mode and plugin roster), `merge-settings.jq`, `prune-roster.jq`
-- `.devcontainer/config/zsh/**`
-- Global git configuration
-- The Claude Code plugin roster (marketplaces registered, enabled plugins
-  installed)
+- `.devcontainer/config/claude/**`: the settings merge (permission mode, plugin
+  roster), the SessionStart hook, and `~/.claude/CLAUDE.md`, which it refreshes
+  only when the live copy was not edited
+- `.devcontainer/config/zsh/**` and `.devcontainer/config/starship/**`
+- Global git configuration, and the Claude Code plugin roster (marketplaces
+  registered, enabled plugins installed)
 
-**Needs a rebuild** — these only take effect at image build or container create
-time, so the command updates the files and then tells you:
+**Needs a rebuild**, which the user runs on the host with `dev rebuild`:
 
-- `.devcontainer/Dockerfile`
-- `.devcontainer/devcontainer.json` — `features`, `containerEnv`, `runArgs`,
-  `mounts`, `forwardPorts`
-- `.devcontainer/init-host-certs.sh` (runs on the **host** at `initializeCommand`)
+- `.devcontainer/Dockerfile` and `.devcontainer/devcontainer.json`
+- `.devcontainer/firewall/` and `.devcontainer/init-host-*.sh`
+- `.devcontainer/config/claude/managed-settings.json`: the policy is baked into
+  the image, and once provisioning has locked sudo (the default) nothing in
+  the container can replace it
 
 Never claim a rebuild-only change is live. Report it in the rebuild list.
 
 ## Steps
 
+Each Bash call starts a fresh shell, so the paths below are literal and every
+command names them in full.
+
 ### 1. Preflight
 
 ```bash
 git rev-parse --show-toplevel
-git status --short
-ls -la .devcontainer/
+git status --short -- .devcontainer DEVCONTAINER.md
+ls .devcontainer/devcontainer.json .devcontainer/post-create.sh
 ls /.dockerenv
 ```
 
-`ls -la .devcontainer/` failing means the project has no `.devcontainer/`;
 `ls /.dockerenv` succeeding means you are inside a container.
 
 - Run from the repo root; use it for every path below.
-- **Uncommitted changes under `.devcontainer/` → stop and ask.** This command
-  overwrites those files. Do not stash, do not tidy — ask the user to commit
-  first, per the git rules in `CLAUDE.md`.
-- No `.devcontainer/` at all → this is a first-time install rather than an
-  update. Say so and confirm before copying the whole starter in.
-- Not inside a container → the file sync still works, but nothing can be applied
-  live. Say so and offer `--check` instead.
+- **Uncommitted changes under `.devcontainer/` → stop and ask.** The merge base
+  is the last commit that touched `.devcontainer/`, and the merge rewrites
+  those files. Do not stash, do not tidy; ask the user to commit first, per the
+  git rules in `CLAUDE.md`.
+- No `.devcontainer/` at all → this is a first-time install. Say so and point
+  at `/devcontainer-setup`, which runs on the host.
 
-### 2. Fetch upstream into a temp clone
-
-The temp clone lives at `/tmp/kokko-devcontainer-upstream` — use that literal
-path in every command below.
+### 2. Fetch the template
 
 ```bash
-rm -rf /tmp/kokko-devcontainer-upstream
-git clone --depth=1 https://github.com/kokko-ng/kokko-devcontainer /tmp/kokko-devcontainer-upstream
-# with --ref: git clone --depth=1 --branch <ref> ...
+rm -rf /tmp/kokko-devcontainer-upstream /tmp/kokko-devcontainer-renders
+git clone https://github.com/kokko-ng/kokko-devcontainer /tmp/kokko-devcontainer-upstream
+git -C /tmp/kokko-devcontainer-upstream checkout <ref>    # with --ref only
+cat /tmp/kokko-devcontainer-upstream/VERSION
 git -C /tmp/kokko-devcontainer-upstream log -1 --format='%h %ad %s' --date=short
 ```
 
-Clone failed (no network, private repo, bad ref) → report the actual error and
-stop. Do not fall back to a cached copy.
+A full clone, not `--depth=1`: step 4 needs the history. Clone failed (no
+network, a firewall that does not allow GitHub, bad ref) → report the actual
+error and stop. Do not fall back to a cached copy.
 
-### 3. Diff against the project
+### 3. Recover the project's answers
+
+`/tmp/kokko-devcontainer-upstream/cookiecutter.json` lists the answer keys.
+Work out the value each had for this project from its files:
+
+- `project_name`: the first line of `devcontainer.json`
+- `python_version`: the `FROM` line in the `Dockerfile`
+- `node_version`, `include_azure_cli`, `include_docker_in_docker`: the
+  `features` block of `devcontainer.json`
+- `include_azure_sql_driver`: whether the `Dockerfile` installs `msodbcsql18`
+- `backend_src_dir`: `PYTHONPATH`; `frontend_dir`: `DEVCONTAINER_FRONTEND_DIR`;
+  the ports: `forwardPorts`
+- `include_copilot_cli`, `include_playwright`, `agent_sudo`,
+  `network_firewall`, `git_user_name`, `git_user_email`: the `DEVCONTAINER_*`
+  values in `containerEnv`; `cache_volume_scope`: the volume names in
+  `mounts`; `container_memory_limit`: the fallback in the `--memory` run arg
+- `claude_plugin_roster`, `claude_attribution`: `config/claude/settings.json`
+
+A key with no evidence keeps the template default.
+
+### 4. Render the old and the new template
+
+The old render is the template as it stood when the project last took it: the
+last upstream `main` commit before the project's latest `.devcontainer/`
+commit.
 
 ```bash
-diff -ruq /tmp/kokko-devcontainer-upstream/.devcontainer .devcontainer
+git log -1 --format=%cI -- .devcontainer
+git -C /tmp/kokko-devcontainer-upstream rev-list -1 --before=<that date> main
+git -C /tmp/kokko-devcontainer-upstream worktree add /tmp/kokko-devcontainer-renders/base-tree <that commit>
+ls /tmp/kokko-devcontainer-renders/base-tree/cookiecutter.json
 ```
 
-Then, for every file that differs, `diff -u` it to see the actual change.
-
-Sort the differing files into three buckets:
-
-1. **Upstream-only additions** — new files. Safe to copy.
-2. **Changed, not customized here** — the local copy matches an older upstream
-   version. Safe to copy.
-3. **Changed and customized here** — the local file carries project-specific
-   edits. `devcontainer.json` (name, `forwardPorts`, `PYTHONPATH`, mounts) and
-   `post-create.sh` (frontend directory, extra setup) are the usual ones.
-
-To tell bucket 2 from bucket 3, check whether the local edit exists in upstream
-history:
+Render both with the step 3 answers:
 
 ```bash
-git -C /tmp/kokko-devcontainer-upstream log --oneline -5 -- .devcontainer/<file>
+uvx cookiecutter /tmp/kokko-devcontainer-renders/base-tree --no-input -o /tmp/kokko-devcontainer-renders/old key=value ...
+uvx cookiecutter /tmp/kokko-devcontainer-upstream --no-input -o /tmp/kokko-devcontainer-renders/new key=value ...
 ```
 
-If the local content is not any upstream version, it is a local customization.
+Each render writes a `<slug>/` folder named after the project; `<slug>` below
+is that name. A base commit with no `cookiecutter.json` predates the template
+(the project was copied from the repo's old top-level `.devcontainer/`). Then
+the old version is `/tmp/kokko-devcontainer-renders/base-tree/.devcontainer`
+itself, with no render: use that path wherever the steps below say
+`/tmp/kokko-devcontainer-renders/old/<slug>/.devcontainer`.
 
-### 4. Report the drift
+Compare the old render with the project. Where they differ in ways that look
+like wrong answers rather than local edits (a different Node version in the
+feature block, a missing mount), fix the answers and render both again.
+
+### 5. Report the drift
+
+Diff the old render against the new one to see what upstream changed, and the
+project against the old render to see what was customized here:
+
+```bash
+diff -ruq /tmp/kokko-devcontainer-renders/old/<slug>/.devcontainer /tmp/kokko-devcontainer-renders/new/<slug>/.devcontainer
+diff -ruq /tmp/kokko-devcontainer-renders/old/<slug>/.devcontainer .devcontainer
+```
 
 Present a table before changing anything:
 
-| File | Change | Bucket | Live or rebuild |
-| ---- | ------ | ------ | --------------- |
-| `config/claude/CLAUDE.md` | 1 section added | not customized | live |
-| `devcontainer.json` | new `runArgs` entry | customized here | rebuild |
+| File | Upstream change | Customized here | Live or rebuild |
+| ---- | --------------- | --------------- | --------------- |
+| `config/claude/CLAUDE.md` | 1 section added | no | live |
+| `devcontainer.json` | new `runArgs` entry | yes | rebuild |
 
-Then the upstream commits you are pulling in:
+Then the upstream commits being pulled in, summarized in a few lines:
 
 ```bash
-git -C /tmp/kokko-devcontainer-upstream log --oneline -20 -- .devcontainer
+git -C /tmp/kokko-devcontainer-upstream log --oneline <base commit>..HEAD -- '{{cookiecutter.project_slug}}'
 ```
 
 **Stop here if `--check`.**
 
-If nothing differs, say the config is already current and stop — do not run the
-refresh for the sake of it.
+If upstream changed nothing, say the config is already current and stop. Do
+not run the refresh for the sake of it.
 
-### 5. Apply the file updates
+### 6. Merge
 
-Buckets 1 and 2: copy straight over.
-
-```bash
-cp /tmp/kokko-devcontainer-upstream/.devcontainer/<path> .devcontainer/<path>
-```
-
-Bucket 3 (customized here): **never blind-copy.** For each file, show the diff,
-say which hunks are upstream improvements and which are this project's
-customizations, and merge by hand so the customizations survive. When a hunk is
-genuinely ambiguous, present the options and a recommendation and let the user
-pick.
-
-Deleted upstream: report files that upstream removed. Do not delete them
-without asking — a project may depend on one.
-
-### 6. Refresh `~/.claude/CLAUDE.md`
-
-`post-create.sh` deliberately will not overwrite an existing `~/.claude/CLAUDE.md`,
-so a bundled-CLAUDE.md change reaches a running container only here.
+For every file under the new render's `.devcontainer/`, plus `DEVCONTAINER.md`
+(and `CLAUDE.md` with `--all`):
 
 ```bash
-diff -u "$HOME/.claude/CLAUDE.md" .devcontainer/config/claude/CLAUDE.md
+git merge-file -p .devcontainer/<path> /tmp/kokko-devcontainer-renders/old/<slug>/.devcontainer/<path> /tmp/kokko-devcontainer-renders/new/<slug>/.devcontainer/<path>
 ```
 
-- Identical → nothing to do.
-- Differs only by the upstream additions → back up and copy:
+`-p` prints the merged result, so review it and write it over the project file
+yourself. A file this project never customized merges cleanly to the new
+version; customizations survive. Show every conflict, say which side is the
+upstream improvement and which the project's customization, and resolve it by
+hand; when a conflict is genuinely ambiguous, present the options and a
+recommendation and let the user pick.
 
-  ```bash
-  cp "$HOME/.claude/CLAUDE.md" "$HOME/.claude/CLAUDE.md.bak"
-  cp .devcontainer/config/claude/CLAUDE.md "$HOME/.claude/CLAUDE.md"
-  ```
+- New upstream files are copied in.
+- Files upstream removed are reported, not deleted: a project may depend on
+  one.
+- Leave `.devcontainer/certs/` and `.devcontainer/.host-git-identity` alone; the
+  host fills them at build time.
 
-- Contains local edits → show them, and merge the upstream sections in rather
-  than overwriting. Ask before discarding anything the user wrote.
+Show `git diff --stat` and the interesting hunks when done.
 
 ### 7. Apply live
+
+Inside the container:
 
 ```bash
 bash .devcontainer/post-create.sh --config-only
 ```
 
+On the host, when the container is running:
+
+```bash
+devcontainer exec --workspace-folder . bash .devcontainer/post-create.sh --config-only
+```
+
 This re-merges the bundled settings and plugin roster into
 `~/.claude/settings.json` (keeping the user's own settings and any plugin they
-explicitly disabled), re-registers the marketplaces, installs any newly rostered plugin, re-applies
-the git configuration, and relinks the zsh config. It is idempotent.
-
-Older config without that flag → the script exits 2 on the unknown argument.
-Say so and point at this repo's `post-create.sh`.
+explicitly disabled), re-registers the marketplaces, installs any newly
+rostered plugin, refreshes `~/.claude/CLAUDE.md` when the live copy is
+unmodified, re-applies the git configuration, and relinks the shell config. It
+is idempotent, and every container start runs it too. Relay any `NOTE:` or
+`WARNING:` lines it prints (an edited `~/.claude/CLAUDE.md` left alone, a
+policy change that needs a rebuild).
 
 ### 8. Report
 
-Report in the reply — do not write an update report file:
+Report in the reply; do not write an update report file:
 
-- Files updated, files merged by hand, files skipped and why
-- The upstream commit now matched (`git -C /tmp/kokko-devcontainer-upstream rev-parse --short HEAD`)
+- The template version before (the base commit) and after (`VERSION` and
+  commit), and the answers used
+- Files updated, files merged with conflicts and how each was resolved, files
+  upstream removed
 - **What is live now** versus **what needs a rebuild**, explicitly
 - Plugin changes: run `/plugins-update` next if plugin versions also moved, and
   `/reload-plugins` to load them into this session
-- The rebuild command, if anything in the rebuild bucket changed — printed
-  for the user to run on the host, never run from here:
+- The rebuild command, if anything in the rebuild list changed, printed for
+  the user to run on the host, never run from here (it replaces the running
+  container; the volumes, and with them the sign-ins and Claude Code history,
+  are kept):
 
   ```text
-  devcontainer up --workspace-folder . --remove-existing-container
+  dev rebuild <project>
   ```
 
-Finally: `rm -rf /tmp/kokko-devcontainer-upstream`.
+Finally: `git -C /tmp/kokko-devcontainer-upstream worktree remove --force /tmp/kokko-devcontainer-renders/base-tree`,
+then `rm -rf /tmp/kokko-devcontainer-upstream /tmp/kokko-devcontainer-renders`.
 
-The `.devcontainer/` changes are left uncommitted in the working tree for review.
-Do not commit or push them — that is the user's call.
+The changes are left uncommitted in the working tree for review. Do not commit
+or push them; that is the user's call.

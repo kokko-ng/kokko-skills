@@ -61,7 +61,7 @@
     {
       "name": "kokko-env",
       "source": "./plugins/kokko-env/",
-      "description": "Dev environment setup and maintenance: install the kokko-devcontainer starter into a project, refresh the devcontainer config inside a running container, and update Claude Code plugins to their latest marketplace versions.",
+      "description": "Dev environment setup and maintenance: install the kokko-devcontainer template into a project, merge newer template changes into its devcontainer config, and update Claude Code plugins to their latest marketplace versions.",
       "version": "6.0.0",
       "author": {
         "name": "kokko-ng"

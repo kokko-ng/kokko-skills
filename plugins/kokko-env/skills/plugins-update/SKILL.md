@@ -16,7 +16,7 @@ and hand back a before/after table.
 
 | Flag | Effect |
 | ---- | ------ |
-| _(none)_ | The `kokko-ng` marketplace, `kokko-ng-kokko-cmds`. |
+| _(none)_ | The `kokko-ng` marketplaces: every configured marketplace whose source repo is under `kokko-ng/` (`kokko-ng-kokko-cmds`, `kokko-claude-mods`). |
 | `--all` | Every configured marketplace, including third-party ones. |
 | `--check` | Report what would change. Install and update nothing. |
 | `<plugin@marketplace> ...` | Only these plugins. |
