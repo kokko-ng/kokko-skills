@@ -6,6 +6,15 @@ Changelog](https://keepachangelog.com/). Releases before 3.6.0 are
 documented in [GitHub
 Releases](https://github.com/kokko-ng/kokko-skills/releases) only.
 
+## 6.2.1 - 2026-10-09
+
+### Changed
+
+- kokko-env `/devcontainer-update` can now be invoked by Claude when you ask
+  it to update a project's devcontainer (it was user-invoked only), so one
+  request can update several projects. It still leaves its changes
+  uncommitted for review.
+
 ## 6.2.0 - 2026-10-09
 
 ### Changed
