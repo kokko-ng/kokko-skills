@@ -1,14 +1,14 @@
 ---
 name: devcontainer-update
-description: Merge newer kokko-ng/kokko-devcontainer template changes into this project's .devcontainer/ and apply what can go live without a rebuild.
-argument-hint: '[--check] [--ref <branch-or-tag>] [--all]'
+description: Merge newer kokko-ng/kokko-devcontainer template changes into this project's template files (.devcontainer/, CLAUDE.md, the quality gate) and apply what can go live without a rebuild.
+argument-hint: '[--check] [--ref <branch-or-tag>]'
 allowed-tools: Bash(git:*), Bash(bash:*), Bash(diff:*), Bash(cp:*), Bash(mkdir:*), Bash(rm:*), Bash(ls:*), Bash(find:*), Bash(cat:*), Bash(jq:*), Bash(uvx:*), Bash(devcontainer:*), Read, Write, Edit
 disable-model-invocation: true
 ---
 
 # Update the Devcontainer Config
 
-Bring this project's `.devcontainer/` up to date with the
+Bring this project's template files up to date with the
 [kokko-ng/kokko-devcontainer](https://github.com/kokko-ng/kokko-devcontainer)
 cookiecutter template, and apply everything that can take effect **without
 rebuilding the container**. Run it inside the devcontainer or on the host.
@@ -18,17 +18,22 @@ answers this project was generated with: once at the template version the
 project last took, once at the new one. The difference between the two renders
 is merged into the project's files, so the project's own edits survive.
 
+The template files are `.devcontainer/`, `DEVCONTAINER.md`, `CLAUDE.md`,
+`.gitignore`, `.pre-commit-config.yaml`, `pyproject.toml`, `trivy.yaml`,
+`.github/workflows/ci.yml` and `scripts/hooks/`. The starter package under the
+backend source folder and `tests/` are the project's own code: never merge,
+copy or delete them.
+
 `$ARGUMENTS`:
 
 | Flag | Effect |
 | ---- | ------ |
 | `--check` | Report the drift and stop. Change nothing. |
 | `--ref <branch-or-tag>` | Merge toward that template ref instead of `main`. |
-| `--all` | Also merge the template's `CLAUDE.md` into the project's own. Off by default: most projects have rewritten theirs. |
 
 ## What goes live and what needs a rebuild
 
-Applied live by `post-create.sh --config-only` (step 7):
+Applied live by `post-create.sh --config-only` (step 8):
 
 - `.devcontainer/config/claude/**`: the settings merge (permission mode, plugin
   roster), the SessionStart hook, and `~/.claude/CLAUDE.md`, which it refreshes
@@ -56,7 +61,7 @@ command names them in full.
 
 ```bash
 git rev-parse --show-toplevel
-git status --short -- .devcontainer DEVCONTAINER.md
+git status --short -- .devcontainer DEVCONTAINER.md CLAUDE.md .gitignore .pre-commit-config.yaml pyproject.toml trivy.yaml .github/workflows/ci.yml scripts/hooks
 ls .devcontainer/devcontainer.json .devcontainer/post-create.sh
 ls /.dockerenv
 ```
@@ -64,9 +69,8 @@ ls /.dockerenv
 `ls /.dockerenv` succeeding means you are inside a container.
 
 - Run from the repo root; use it for every path below.
-- **Uncommitted changes under `.devcontainer/` → stop and ask.** The merge base
-  is the last commit that touched `.devcontainer/`, and the merge rewrites
-  those files. Do not stash, do not tidy; ask the user to commit first, per the
+- **Uncommitted changes in any template file → stop and ask.** The merge base
+  is the last commit that touched them, and the merge rewrites those files. Do not stash, do not tidy; ask the user to commit first, per the
   git rules in `CLAUDE.md`.
 - No `.devcontainer/` at all → this is a first-time install. Say so and point
   at `/devcontainer-setup`, which runs on the host.
@@ -101,18 +105,19 @@ Work out the value each had for this project from its files:
   `network_firewall`, `git_user_name`, `git_user_email`: the `DEVCONTAINER_*`
   values in `containerEnv`; `cache_volume_scope`: the volume names in
   `mounts`; `container_memory_limit`: the fallback in the `--memory` run arg
-- `claude_plugin_roster`, `claude_attribution`: `config/claude/settings.json`
+- `claude_plugin_roster`: `config/claude/settings.json`. (Older templates had a
+  `claude_attribution` answer; it no longer exists, so do not pass it.)
 
 A key with no evidence keeps the template default.
 
 ### 4. Render the old and the new template
 
 The old render is the template as it stood when the project last took it: the
-last upstream `main` commit before the project's latest `.devcontainer/`
-commit.
+last upstream `main` commit before the project's latest commit to its
+template files.
 
 ```bash
-git log -1 --format=%cI -- .devcontainer
+git log -1 --format=%cI -- .devcontainer DEVCONTAINER.md CLAUDE.md
 git -C /tmp/kokko-devcontainer-upstream rev-list -1 --before=<that date> main
 git -C /tmp/kokko-devcontainer-upstream worktree add /tmp/kokko-devcontainer-renders/base-tree <that commit>
 ls /tmp/kokko-devcontainer-renders/base-tree/cookiecutter.json
@@ -142,9 +147,12 @@ Diff the old render against the new one to see what upstream changed, and the
 project against the old render to see what was customized here:
 
 ```bash
-diff -ruq /tmp/kokko-devcontainer-renders/old/<slug>/.devcontainer /tmp/kokko-devcontainer-renders/new/<slug>/.devcontainer
+diff -ruq /tmp/kokko-devcontainer-renders/old/<slug> /tmp/kokko-devcontainer-renders/new/<slug>
 diff -ruq /tmp/kokko-devcontainer-renders/old/<slug>/.devcontainer .devcontainer
 ```
+
+Repeat the second diff for each other template file. Ignore differences in the
+starter package and `tests/`.
 
 Present a table before changing anything:
 
@@ -166,11 +174,10 @@ not run the refresh for the sake of it.
 
 ### 6. Merge
 
-For every file under the new render's `.devcontainer/`, plus `DEVCONTAINER.md`
-(and `CLAUDE.md` with `--all`):
+For every template file in the new render:
 
 ```bash
-git merge-file -p .devcontainer/<path> /tmp/kokko-devcontainer-renders/old/<slug>/.devcontainer/<path> /tmp/kokko-devcontainer-renders/new/<slug>/.devcontainer/<path>
+git merge-file -p <path> /tmp/kokko-devcontainer-renders/old/<slug>/<path> /tmp/kokko-devcontainer-renders/new/<slug>/<path>
 ```
 
 `-p` prints the merged result, so review it and write it over the project file
@@ -180,7 +187,11 @@ upstream improvement and which the project's customization, and resolve it by
 hand; when a conflict is genuinely ambiguous, present the options and a
 recommendation and let the user pick.
 
-- New upstream files are copied in.
+- New upstream files the project lacks are copied in.
+- A file the project already has but the old render lacks (the project predates
+  the template shipping it: its own `pyproject.toml`, `.pre-commit-config.yaml`
+  or CI) has no merge base. Merge it by hand: keep the project's own
+  dependencies, settings and hooks, add the template's, and show the result.
 - Files upstream removed are reported, not deleted: a project may depend on
   one.
 - Leave `.devcontainer/certs/` and `.devcontainer/.host-git-identity` alone; the
@@ -188,7 +199,15 @@ recommendation and let the user pick.
 
 Show `git diff --stat` and the interesting hunks when done.
 
-### 7. Apply live
+### 7. Check the gate
+
+If `.pre-commit-config.yaml`, `pyproject.toml` or `scripts/hooks/` changed, run
+`pre-commit run --all-files` (on the host: `devcontainer exec
+--workspace-folder . pre-commit run --all-files`) and report what a stricter
+gate now flags. Do not loosen the gate to pass, and do not fix the project's
+code unless the user asks.
+
+### 8. Apply live
 
 Inside the container:
 
@@ -211,7 +230,7 @@ is idempotent, and every container start runs it too. Relay any `NOTE:` or
 `WARNING:` lines it prints (an edited `~/.claude/CLAUDE.md` left alone, a
 policy change that needs a rebuild).
 
-### 8. Report
+### 9. Report
 
 Report in the reply; do not write an update report file:
 

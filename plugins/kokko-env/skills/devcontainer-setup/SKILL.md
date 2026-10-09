@@ -110,7 +110,7 @@ do not assume the defaults fit:
 | `include_docker_in_docker` | Something builds containers inside the devcontainer. `yes` makes the container privileged, so ask before choosing it. | `no` |
 
 Leave the remaining keys (`include_copilot_cli`, `claude_plugin_roster`,
-`claude_attribution`, `agent_sudo`, `network_firewall`, `cache_volume_scope`,
+`agent_sudo`, `network_firewall`, `cache_volume_scope`,
 `container_memory_limit`, `git_user_name`, `git_user_email`) at their defaults
 unless the user asks: they are security and identity choices, not facts about
 the project.
