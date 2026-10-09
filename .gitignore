@@ -29,3 +29,8 @@ node_modules/
 # Local scratch
 tmp/
 *.tmp
+
+# Claude Code: per-machine permission grants, and the worktrees that
+# `claude --worktree` creates inside the repo
+.claude/settings.local.json
+.claude/worktrees/
