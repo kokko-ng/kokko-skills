@@ -6,6 +6,16 @@ Changelog](https://keepachangelog.com/). Releases before 3.6.0 are
 documented in [GitHub
 Releases](https://github.com/kokko-ng/kokko-skills/releases) only.
 
+## 5.2.1 - 2026-10-09
+
+### Fixed
+
+- kokko-notifications: no sound played inside a devcontainer. The fallback
+  rang the terminal bell through `/dev/tty`, but Claude Code runs hooks
+  without a controlling terminal, so the write failed silently. The bell now
+  goes to the terminal of the nearest ancestor process that has one (the
+  Claude Code process), which the host terminal turns into its bell sound.
+
 ## 5.2.0 - 2026-10-08
 
 ### Added

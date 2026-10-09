@@ -1,6 +1,6 @@
 {
   "name": "kokko-git",
-  "version": "5.2.0",
+  "version": "5.2.1",
   "description": "Git workflow skills for commit+push, branch pruning, releases, and syncing.",
   "author": {
     "name": "kokko-ng"

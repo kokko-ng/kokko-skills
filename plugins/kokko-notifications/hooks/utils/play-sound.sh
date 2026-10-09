@@ -14,6 +14,27 @@ sound_wanted() {
     esac
 }
 
+# ring_bell - ring the terminal bell. Claude Code runs hooks without a
+# controlling terminal, so /dev/tty fails inside a hook; the bell then goes to
+# the terminal of the nearest ancestor that has one (the Claude Code process).
+# Every write is silenced: a sound utility must never leak stderr noise into a
+# hook's output.
+ring_bell() {
+    local pid=$$ tty
+    { printf '\a' > /dev/tty; } 2>/dev/null && return 0
+    while [ -n "$pid" ] && [ "$pid" -gt 1 ] 2>/dev/null; do
+        tty=$(ps -o tty= -p "$pid" 2>/dev/null)
+        tty=${tty// /}
+        case "$tty" in
+            "" | "?" | "??") ;;
+            *) { printf '\a' > "/dev/$tty"; } 2>/dev/null && return 0 ;;
+        esac
+        pid=$(ps -o ppid= -p "$pid" 2>/dev/null)
+        pid=${pid// /}
+    done
+    return 0
+}
+
 play_sound() {
     local sound_type="${1:-info}"
     local os_type
@@ -95,12 +116,10 @@ play_sound() {
                     # ALSA: Generate tone
                     (speaker-test -t sine -f "$freq" -l 1 >/dev/null 2>&1 &
                      sleep "$duration" && pkill -f "speaker-test.*-f $freq" 2>/dev/null) &
-                elif [ -e /dev/tty ]; then
-                    # Fallback (containers): terminal bell via host TTY.
-                    # The redirection itself can fail (no controlling terminal),
-                    # so the whole group is silenced -- a sound utility must
-                    # never leak stderr noise into a hook's output.
-                    { printf '\a' > /dev/tty; } 2>/dev/null || true
+                else
+                    # Fallback (containers): the terminal bell, which the
+                    # host's terminal turns into a sound.
+                    ring_bell
                 fi
             fi
             ;;
