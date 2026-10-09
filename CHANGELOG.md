@@ -6,6 +6,42 @@ Changelog](https://keepachangelog.com/). Releases before 3.6.0 are
 documented in [GitHub
 Releases](https://github.com/kokko-ng/kokko-skills/releases) only.
 
+## 6.0.0 - 2026-10-09
+
+Major: a plugin is gone, so its skills and their `plugin@marketplace` key
+stop resolving.
+
+### Removed
+
+- kokko-code-quality, with all of its skills (`/architecture`, `/audit`,
+  `/check`, `/complexity`, `/cruft`, `/deadcode`, `/debt`, `/deps-update`,
+  `/docs`, `/emojis`, `/perf`, `/security`, `/spec`, `/types`,
+  `/verify-no-mocks`, `/verify-spec`). A strict pre-commit config in each
+  repo (ruff with strict rules, `mypy --strict`, vulture, deptry,
+  import-linter, a coverage floor, file-length checks, gitleaks, commitizen)
+  now does this job on every commit, so the skills, and the separate
+  kokko-janitor marketplace that drove them, are superseded. Uninstall with
+  `/plugin uninstall kokko-code-quality@kokko-ng-kokko-cmds`.
+- The per-repo `.kokko.json` config section from the README: only the
+  removed check skills and the janitor read it.
+
+### Changed
+
+- No remaining skill or doc points at kokko-code-quality or kokko-janitor.
+  `tailor` asks to write `spec.md` directly when it is missing instead of
+  recommending `/spec`, and a tailored prompt gets another pass by running
+  it again in a fresh session instead of through `/kokko-janitor:multipass`.
+  The validation templates keep their progress-file ID format without
+  citing the janitor's progress-guard hook.
+- `plugins-update` defaults to the one `kokko-ng-kokko-cmds` marketplace.
+- README: the workflow table points at `pre-commit run --all-files` for
+  linting; the install line and the kokko-code-quality section are gone.
+  CONTRIBUTING drops the shared-infrastructure note about
+  kokko-janitor-skill.
+- Commit messages are checked against Conventional Commits: a commitizen
+  `commit-msg` hook in `.pre-commit-config.yaml` and a `commit-messages` CI
+  job.
+
 ## 5.2.1 - 2026-10-09
 
 ### Fixed

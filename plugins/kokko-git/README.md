@@ -1,8 +1,7 @@
 # kokko-git
 
 Git workflow skills: commit+push in one step, branch pruning, releases, and
-syncing with the base branch. The janitor lives in its own repo:
-[kokko-ng/kokko-janitor-skill](https://github.com/kokko-ng/kokko-janitor-skill).
+syncing with the base branch.
 
 ```bash
 /plugin install kokko-git@kokko-ng-kokko-cmds

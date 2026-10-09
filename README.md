@@ -19,7 +19,6 @@ Then install the plugins you want:
 /plugin install kokko-notifications@kokko-ng-kokko-cmds
 /plugin install kokko-git@kokko-ng-kokko-cmds
 /plugin install kokko-validation@kokko-ng-kokko-cmds
-/plugin install kokko-code-quality@kokko-ng-kokko-cmds
 /plugin install kokko-viz@kokko-ng-kokko-cmds
 /plugin install kokko-infra@kokko-ng-kokko-cmds
 /plugin install kokko-ai-config@kokko-ng-kokko-cmds
@@ -34,51 +33,24 @@ fills your conversation.
 
 ## Which workflow when
 
-The plugins compose into a few end-to-end flows. The janitor and multipass
-live in [kokko-ng/kokko-janitor-skill](https://github.com/kokko-ng/kokko-janitor-skill)
-and drive the check skills here by name.
+The plugins compose into a few end-to-end flows. Linting, type checking,
+dead-code, dependency, and secret checks live in each repo's pre-commit
+config rather than in a skill.
 
 | When | Run | Plugins |
 | ---- | --- | ------- |
 | Starting a project | `devcontainer-setup` on the host, then `/plugins-update` inside the container | kokko-env |
-| Every commit | `/compush`; `/sync` before opening a PR; `/check` when pre-commit is red | kokko-git, kokko-code-quality |
-| Before a feature is done | `/spec` writes the stories, `tailor local` writes the validation prompt, `/kokko-janitor:multipass 2 prompts/local-validation.md` runs it to convergence | kokko-code-quality, kokko-validation, kokko-janitor |
-| Shipping | `tailor azure-deploy`, then `tailor deployed`, each run through multipass; `/release` when green | kokko-validation, kokko-git |
-| Weekly hygiene | `/prune`, `/cruft`, `/deps-update` | kokko-git, kokko-code-quality |
-| Deep clean | `/kokko-janitor:janitor --dry-run` to see what would change, `--hold` to fix in worktrees and review the branches, `--resume` to merge | kokko-janitor, kokko-code-quality |
-| One check, one language | `/security py`, `/types js`, `/deadcode`, ... (`--report` for findings only) | kokko-code-quality |
-| Understanding a codebase | `/audit`, `/debt`, `/perf`, `/c4-map` | kokko-code-quality, kokko-viz |
+| Every commit | `/compush`; `/sync` before opening a PR; `pre-commit run --all-files` when a hook fails | kokko-git |
+| Before a feature is done | `tailor local` writes the validation prompt; run it, then run it again in a fresh session until a pass finds nothing new | kokko-validation |
+| Shipping | `tailor azure-deploy`, then `tailor deployed`, each run the same way; `/release` when green | kokko-validation, kokko-git |
+| Weekly hygiene | `/prune` | kokko-git |
+| Understanding a codebase | `/c4-map` | kokko-viz |
 | Keeping docs honest | `/verify-docs`, `/prune-docs`, `/c4-verify` | kokko-ai-config, kokko-viz |
 | Azure | `/az-status`, `/az-costs` | kokko-infra |
 
-## Per-repo configuration
-
-An optional `.kokko.json` at a repository's root steers the check skills
-and the janitor without retyping flags. Every key is optional, unknown keys
-are ignored, and an explicit flag always wins over the file.
-
-```json
-{
-  "languages": ["py", "js"],
-  "checks": ["security", "types", "complexity", "deadcode", "docs", "architecture"],
-  "excludes": ["*/generated/*"],
-  "tools": {"py": {"security": "ruff", "docs": "ruff"}},
-  "janitor": {"top": 3, "max_rounds": 1, "candidate_loc": 400, "candidate_defs": 30}
-}
-```
-
-| Key | Read by | Meaning |
-| --- | ------- | ------- |
-| `languages` | check skills, janitor | Replaces language detection |
-| `checks` | janitor | Lint checks to run |
-| `excludes` | check skills, hotspot ranker | Extra path globs to skip |
-| `tools` | check skills | Preferred tool per language and check |
-| `janitor.top`, `janitor.max_rounds` | janitor | Design candidates to judge, convergence rounds |
-| `janitor.candidate_loc`, `janitor.candidate_defs` | hotspot ranker | Absolute god-module thresholds |
-
 ## Versioning
 
-All eight plugins version in lock-step: every release bumps every plugin (and
+All seven plugins version in lock-step: every release bumps every plugin (and
 every marketplace entry) to the same version, even ones that did not change.
 See [CONTRIBUTING.md](CONTRIBUTING.md).
 
@@ -133,43 +105,6 @@ Azure deployment, aesthetics) and a skill that tailors them to the repo. See
 | Skill | Purpose |
 | ----- | ------- |
 | `/tailor <local\|deployed\|azure-deploy\|aesthetics> [hints such as resource group or app name]` | Instantiate a generic validation/deployment master prompt for the current repo and save it to prompts/ |
-
-† user-invoked only (`disable-model-invocation`) · ‡ runs forked, reports a summary
-
-<!-- generated:skills end -->
-
-### kokko-code-quality
-
-Analysis skills and the six check skills (security, types, complexity,
-deadcode, docs, architecture) the janitor drives. The checks share one
-workflow, use the tools a repo already configures (ruff first for Python),
-run specialist tools ephemerally rather than adding dependencies, and take
-`--report` for findings-only runs. See
-[plugins/kokko-code-quality/README.md](plugins/kokko-code-quality/README.md).
-
-Claude Code ships a built-in `/review` (pull-request review); the
-whole-codebase review here is `/audit` so the two never collide.
-
-<!-- generated:skills:kokko-code-quality start -->
-
-| Skill | Purpose |
-| ----- | ------- |
-| `/architecture [py\|js] [--report]` | Enforce architectural layering and import rules with import-linter (Python) or dependency-cruiser (JavaScript/TypeScript) |
-| `/audit [target]` | Perform a direct, no-nonsense code review with a clear merge verdict |
-| `/check` | Run pre-commit until it passes, fixing every issue without skipping hooks |
-| `/complexity [py\|js\|dotnet] [--report]` | Measure and reduce code complexity with ruff's mccabe rule or radon (Python), ESLint complexity rules (JavaScript/TypeScript), or .NET analyzers |
-| `/cruft [dry-run\|auto\|gitignore-only\|<pattern>]` † | Find and remove repository cruft not covered by .gitignore, with confirmation |
-| `/deadcode [py\|js\|dotnet] [--report]` | Detect and remove dead code with vulture and ruff (Python), knip (JavaScript/TypeScript), or .NET analyzers |
-| `/debt [target]` | Deep-read a target to identify technical debt and build a remediation roadmap |
-| `/deps-update [package\|critical\|major\|minor]` † | Interactively update outdated dependencies with validation between each |
-| `/docs [py\|js\|dotnet] [--report]` | Check and improve documentation coverage with ruff's pydocstyle rules or interrogate (Python), eslint-plugin-jsdoc (JavaScript/TypeScript), or XML doc comments (.NET) |
-| `/emojis [target]` † | Remove emojis from source files while preserving code functionality |
-| `/perf [target] [--focus database\|api\|frontend\|backend\|memory]` | Identify performance bottlenecks across a target and recommend prioritized fixes |
-| `/security [py\|js\|dotnet] [--report]` | Run security analysis and fix findings with ruff's bandit rules or bandit (Python), eslint-plugin-security plus npm audit (JavaScript/TypeScript), or SecurityCodeScan (.NET) |
-| `/spec [target] [--output filename]` | Generate a test specification documenting all testable user stories |
-| `/types [py\|js\|dotnet] [--report]` | Strengthen type safety with mypy or pyright (Python), tsc (TypeScript), or nullable reference analyzers (.NET) |
-| `/verify-no-mocks [target]` | Scan production code for mock/stub/dummy data and unconfigured integrations |
-| `/verify-spec [spec-file]` | Validate a spec.md for structure, completeness, and alignment with the codebase |
 
 † user-invoked only (`disable-model-invocation`) · ‡ runs forked, reports a summary
 
