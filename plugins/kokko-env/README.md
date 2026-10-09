@@ -16,7 +16,7 @@ config, and update Claude Code plugins to their latest marketplace versions.
 | Skill | Purpose |
 | ----- | ------- |
 | `/devcontainer-setup [target-directory] [--ref <branch-or-tag>] [--no-up]` † | Install the kokko-ng/kokko-devcontainer template into a directory (defaults to the current one), with template answers that match that project, and bring the container up with dev |
-| `/devcontainer-update [--check] [--ref <branch-or-tag>]` † | Merge newer kokko-ng/kokko-devcontainer template changes into this project's template files (.devcontainer/, CLAUDE.md, the quality gate) and apply what can go live without a rebuild |
+| `/devcontainer-update [--check] [--ref <branch-or-tag>]` | Merge newer kokko-ng/kokko-devcontainer template changes into a project's template files (.devcontainer/, CLAUDE.md, the quality gate) and apply what can go live without a rebuild |
 | `/plugins-update [--check] [--all] [<plugin@marketplace> ...]` † | Update Claude Code plugins to the latest marketplace versions, then prompt to run /reload-plugins |
 
 † user-invoked only (`disable-model-invocation`) · ‡ runs forked, reports a summary

@@ -1,9 +1,8 @@
 ---
 name: devcontainer-update
-description: Merge newer kokko-ng/kokko-devcontainer template changes into this project's template files (.devcontainer/, CLAUDE.md, the quality gate) and apply what can go live without a rebuild.
+description: Merge newer kokko-ng/kokko-devcontainer template changes into a project's template files (.devcontainer/, CLAUDE.md, the quality gate) and apply what can go live without a rebuild. Use when the user asks to update or refresh a project's devcontainer from the template; run it once per project, from that project's root.
 argument-hint: '[--check] [--ref <branch-or-tag>]'
 allowed-tools: Bash(git:*), Bash(bash:*), Bash(diff:*), Bash(cp:*), Bash(mkdir:*), Bash(rm:*), Bash(ls:*), Bash(find:*), Bash(cat:*), Bash(jq:*), Bash(uvx:*), Bash(devcontainer:*), Read, Write, Edit
-disable-model-invocation: true
 ---
 
 # Update the Devcontainer Config
