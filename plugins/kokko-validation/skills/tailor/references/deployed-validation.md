@@ -153,8 +153,8 @@ of this prompt -- nothing else.
 ## Progress Tracking -- Read First, Update Always
 
 `{{PROGRESS_FILE}}` is the single source of truth for progress. Conversation
-memory does not survive context compaction or fresh-context passes
-(multipass); this file does.
+memory does not survive context compaction or a fresh session; this file
+does.
 
 - **On start:** if the file exists, read it and resume from the first item not
   marked `passed`. If it does not exist, create it with one line per user
@@ -163,8 +163,8 @@ memory does not survive context compaction or fresh-context passes
 - **Line format:** `US-003 | pending / in-progress / passed / blocked | short note`
   (setup lines: `S-01 | pending | discovery`) -- for `blocked`, the note
   states exactly what is missing and what was tried. Every line starts with
-  an ID of letters, a hyphen, and digits: the kokko-janitor progress-guard
-  hook counts open items by that shape and ignores lines without one.
+  an ID of letters, a hyphen, and digits, so open items can be counted by
+  that shape.
 - **Update immediately** whenever an item changes state -- never in batches,
   never only at the end.
 - Append one line to a `## Session log` section at the bottom of the file at

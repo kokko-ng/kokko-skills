@@ -41,7 +41,8 @@ named, or the word matches none of the four, ask which one to use
 
 `local`, `deployed`, and `azure-deploy` treat `spec.md` as the source of
 truth for what to validate. If it is missing, ask before continuing:
-generate it now with `/kokko-code-quality:spec` (recommended), proceed
+write it now (recommended: one testable user story per behavior the code
+implements, each with a `US-NNN` ID and its acceptance criteria), proceed
 anyway, or abort.
 
 ### 3. Inspect the repo
@@ -144,9 +145,7 @@ that need the user's confirmation before the prompt is run.
 
 ## Running the result
 
-Tailored prompts are run directly (paste or `@prompts/<file>.md`) or in
-repeated fresh-context passes via `/kokko-janitor:multipass` from the
-kokko-janitor plugin (e.g.
-`/kokko-janitor:multipass 2 prompts/deployed-validation.md`).
-Each pass resumes from the prompt's progress file, so completed items are
-skipped and blocked ones get revisited.
+Run a tailored prompt directly (paste it or `@prompts/<file>.md`). To make
+another pass, run it again in a fresh session: each pass resumes from the
+prompt's progress file, so completed items are skipped and blocked ones get
+revisited. Stop when a pass finds nothing new.

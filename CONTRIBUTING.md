@@ -28,12 +28,13 @@ For hook behavior you rarely need an installed plugin at all:
 working tree.
 
 Run `pre-commit install` once after cloning so the lint suite runs as a git
-pre-commit hook; `pre-commit run --all-files` covers the whole tree on
+pre-commit hook and commitizen checks each commit message against
+Conventional Commits; `pre-commit run --all-files` covers the whole tree on
 demand (see Local checks below).
 
 ## Versioning policy: lock-step
 
-All eight plugins share one version number. Every release bumps every
+All seven plugins share one version number. Every release bumps every
 `plugins/*/.claude-plugin/plugin.json` and every entry in
 `.claude-plugin/marketplace.json` to the same `x.y.z` together, even for
 plugins that did not change. This is deliberate: one number to reason about,
@@ -77,8 +78,8 @@ entry matches its plugin manifest (name, version, description) and that every
    the sync check), then opens and merges a PR to `main`. Update
    [CHANGELOG.md](CHANGELOG.md) with an entry for the new version as part of
    the same PR.
-2. CI runs on `main` (pre-commit, hook tests, plugin validation, prompt
-   lint, README table check, sync check).
+2. CI runs on `main` (pre-commit, commit-message check, hook tests, plugin
+   validation, prompt lint, README table check, sync check).
 3. When CI succeeds, `.github/workflows/release.yml` fires via `workflow_run`
    and creates the `v<version>` GitHub release. It is the sole publisher;
    never run `gh release create` by hand. `workflow_dispatch` with an
@@ -94,11 +95,3 @@ bash scripts/gen-readme-tables.sh --check
 bash scripts/check-marketplace-sync.sh
 claude plugin validate plugins/<name>
 ```
-
-## Shared infrastructure
-
-[kokko-ng/kokko-janitor-skill](https://github.com/kokko-ng/kokko-janitor-skill)
-carries copies of the release workflow, the marketplace sync script, the
-prompt linter, and the pre-commit config. This repo holds
-the reference copies; when changing any of them, keep the two repos
-convergent.

@@ -16,7 +16,7 @@ and hand back a before/after table.
 
 | Flag | Effect |
 | ---- | ------ |
-| _(none)_ | The `kokko-ng` marketplaces: `kokko-ng-kokko-cmds` and `kokko-ng-kokko-janitor`. |
+| _(none)_ | The `kokko-ng` marketplace, `kokko-ng-kokko-cmds`. |
 | `--all` | Every configured marketplace, including third-party ones. |
 | `--check` | Report what would change. Install and update nothing. |
 | `<plugin@marketplace> ...` | Only these plugins. |
@@ -87,7 +87,7 @@ Build the comparison:
 | Plugin | Installed | Published | Action |
 | ------ | --------- | --------- | ------ |
 | `kokko-git@kokko-ng-kokko-cmds` | 3.0.1 | 3.1.0 | update |
-| `kokko-janitor@kokko-ng-kokko-janitor` | 1.1.0 | 1.1.0 | current |
+| `kokko-viz@kokko-ng-kokko-cmds` | 3.1.0 | 3.1.0 | current |
 | `kokko-env@kokko-ng-kokko-cmds` | — | 3.1.0 | install (new) |
 
 **Stop here if `--check`**, and report the table.

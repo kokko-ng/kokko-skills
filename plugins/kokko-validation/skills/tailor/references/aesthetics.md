@@ -71,8 +71,8 @@ Stopping" section at the end of this prompt -- nothing else.
 ## Defect Ledger -- Read First, Update Always
 
 `{{PROGRESS_FILE}}` is the single source of truth for progress. Conversation
-memory does not survive context compaction or fresh-context passes
-(multipass); this file does.
+memory does not survive context compaction or a fresh session; this file
+does.
 
 - **On start:** if the file exists, read it and resume from the first
   screenshot pass or defect not marked done. If it does not exist, create it
@@ -82,8 +82,7 @@ memory does not survive context compaction or fresh-context passes
   -- append a line the moment a defect is spotted; flip it to `fixed` only
   after the confirming re-screenshot.
 - Every line starts with an ID of letters, a hyphen, and digits (`P-01`,
-  `D-014`): the kokko-janitor progress-guard hook counts open items by that
-  shape and ignores lines without one.
+  `D-014`), so open items can be counted by that shape.
 - **Update immediately**, never in batches. Append one line to a
   `## Session log` section at the bottom of the file each pass.
 

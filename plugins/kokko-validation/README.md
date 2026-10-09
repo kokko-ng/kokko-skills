@@ -31,9 +31,9 @@ defects can't be judged by assertions.
 
 <!-- generated:skills end -->
 
-Tailored prompts keep their state in `prompts/<name>-progress.md`. The
-kokko-janitor plugin's progress guard hook uses that file to keep a
-multipass run working while items are still open.
+Tailored prompts keep their state in `prompts/<name>-progress.md`, so
+running a prompt again in a fresh session resumes where the last pass
+stopped.
 
 ## Templates
 
