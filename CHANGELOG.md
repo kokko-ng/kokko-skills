@@ -6,6 +6,14 @@ Changelog](https://keepachangelog.com/). Releases before 3.6.0 are
 documented in [GitHub
 Releases](https://github.com/kokko-ng/kokko-skills/releases) only.
 
+## 6.2.2 - 2026-10-09
+
+### Fixed
+
+- kokko-env `/devcontainer-update`: a project with no Python code yet now gets
+  the template's starter package and test, without which the quality gate's
+  mypy and coverage hooks fail on missing folders.
+
 ## 6.2.1 - 2026-10-09
 
 ### Changed

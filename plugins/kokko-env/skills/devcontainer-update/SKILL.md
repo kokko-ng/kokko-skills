@@ -20,8 +20,10 @@ is merged into the project's files, so the project's own edits survive.
 The template files are `.devcontainer/`, `DEVCONTAINER.md`, `CLAUDE.md`,
 `.gitignore`, `.pre-commit-config.yaml`, `pyproject.toml`, `trivy.yaml`,
 `.github/workflows/ci.yml` and `scripts/hooks/`. The starter package under the
-backend source folder and `tests/` are the project's own code: never merge,
-copy or delete them.
+backend source folder and `tests/` are the project's own code: never merge or
+delete them. One exception: a project with no Python code yet (no backend
+source folder and no `tests/`) gets the starter copied in from the new render,
+because the gate's mypy and coverage settings expect both to exist.
 
 `$ARGUMENTS`:
 
