@@ -29,6 +29,15 @@ jobs:
         with:
           args: -color
 
+  commit-messages:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - name: Check every commit message follows Conventional Commits
+        run: pipx run --spec commitizen==4.19.2 cz check --rev-range HEAD
+
   test-hooks:
     runs-on: ubuntu-latest
     steps:

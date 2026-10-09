@@ -1,3 +1,7 @@
+# commit-msg runs commitizen on every commit message; `pre-commit install`
+# installs both hook types.
+default_install_hook_types: [pre-commit, commit-msg]
+
 repos:
   - repo: https://github.com/pre-commit/pre-commit-hooks
     rev: v6.0.0
@@ -30,3 +34,9 @@ repos:
     hooks:
       - id: shellcheck
         args: [--severity=info, -x]
+
+  - repo: https://github.com/commitizen-tools/commitizen
+    rev: v4.19.2
+    hooks:
+      - id: commitizen
+        stages: [commit-msg]
