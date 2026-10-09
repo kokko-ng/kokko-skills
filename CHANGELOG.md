@@ -6,6 +6,19 @@ Changelog](https://keepachangelog.com/). Releases before 3.6.0 are
 documented in [GitHub
 Releases](https://github.com/kokko-ng/kokko-skills/releases) only.
 
+## 6.2.0 - 2026-10-09
+
+### Changed
+
+- kokko-env `/devcontainer-update` now merges every file the kokko-devcontainer
+  template ships, not only `.devcontainer/`: `CLAUDE.md`, `.gitignore`, the
+  pre-commit config, `pyproject.toml`, `trivy.yaml`, CI and `scripts/hooks/`.
+  Files a project had before the template shipped them are merged by hand, the
+  project's own code is never touched, and the gate runs afterwards. `--all`
+  is gone, since `CLAUDE.md` is always merged.
+- kokko-env `/devcontainer-setup` and `/devcontainer-update` no longer pass the
+  template's removed `claude_attribution` answer.
+
 ## 6.1.0 - 2026-10-09
 
 Minor: `/devcontainer-setup` and `/devcontainer-update` work differently,
