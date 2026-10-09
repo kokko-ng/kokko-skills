@@ -6,6 +6,49 @@ Changelog](https://keepachangelog.com/). Releases before 3.6.0 are
 documented in [GitHub
 Releases](https://github.com/kokko-ng/kokko-skills/releases) only.
 
+## 6.1.0 - 2026-10-09
+
+Minor: `/devcontainer-setup` and `/devcontainer-update` work differently,
+because kokko-devcontainer is now a cookiecutter template; everything else
+is fixes from a prompt audit.
+
+### Changed
+
+- `/devcontainer-setup` renders the kokko-devcontainer template with
+  answers read from the project (name, Python and Node versions, source and
+  frontend directories, ports, the optional Azure, ODBC, Playwright and
+  Docker-in-Docker pieces), copies `.devcontainer/`, `DEVCONTAINER.md`,
+  `CLAUDE.md` and `.gitignore` entries in, and starts the container with
+  `dev up`. Sign-ins are `dev auth`. The `--docs` flag is gone: the
+  template has no root docs to copy.
+- `/devcontainer-update` renders the template at the version the project
+  last took and at the new one, with the project's own answers, and
+  three-way merges the difference into the project with `git merge-file`,
+  so local edits survive. `--all` now also merges the template's
+  `CLAUDE.md`. `post-create.sh --config-only` refreshes
+  `~/.claude/CLAUDE.md`, so the skill no longer copies it by hand; rebuilds
+  are `dev rebuild`.
+- `/plugins-update` covers both kokko-ng marketplaces
+  (`kokko-ng-kokko-cmds` and `kokko-claude-mods`) by default.
+
+### Fixed
+
+- Both devcontainer skills copied or diffed a top-level `.devcontainer/`
+  that the template repo no longer has.
+- `/c4-verify` looked for a PlantUML leftover `.c4-plantuml/` inside the
+  system folder; the library lived at `codemap/.c4-plantuml/`.
+- `/c4-update` and `/c4-verify` say that `$SYSTEM_ID` does not survive
+  between Bash calls. The C4 references agree on the focal-node limit (one,
+  two at the most), the source-link example names the right file, and a
+  downloaded Azure icon goes into the `insight-diagram-design` skill's
+  folder, where the renderer looks.
+- `/verify-docs` resolves internal links from the file's own directory and
+  checks bare relative links too.
+- The deployed-validation template's Entra ID variant derives
+  `BACKEND_FQDN` where it uses it.
+- The root README lists `KOKKO_SOUND_EVENTS`; `.gitignore` covers Claude
+  Code's local settings and worktrees.
+
 ## 6.0.0 - 2026-10-09
 
 Major: a plugin is gone, so its skills and their `plugin@marketplace` key
