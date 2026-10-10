@@ -13,10 +13,18 @@ browser still gets exercised, but by committed specs with web-first
 assertions, not by the agent driving pages and reading screenshots: faster
 re-validation loops and far fewer tokens. The aesthetics template is the
 one place the agent itself drives a browser (Playwright CLI), since visual
-defects can't be judged by assertions.
+defects can't be judged by assertions. It takes its design judgement from
+the [impeccable](https://github.com/pbakaus/impeccable) plugin, which must be
+installed where the prompt runs: `/impeccable audit` and
+`/impeccable critique` review each page against the screenshots, and
+impeccable's refine commands (`polish`, `layout`, `typeset`, `adapt`,
+`clarify`, ...) make the fixes, inside the prompt's frontend-only scope.
 
 ```bash
 /plugin install kokko-validation@kokko-ng-kokko-cmds
+# The aesthetics prompt also needs impeccable:
+/plugin marketplace add pbakaus/impeccable
+/plugin install impeccable@impeccable
 ```
 
 ## Skills
@@ -44,4 +52,4 @@ The generic templates live in `skills/tailor/references/`:
 | `local-validation.md` | Validating the app on a dev machine with deterministic tests |
 | `deployed-validation.md` | Validating a deployed environment with deterministic tests |
 | `azure-deploy.md` | Deploying to Azure |
-| `aesthetics.md` | UI/visual review (screenshot-driven) |
+| `aesthetics.md` | UI/visual review and fix: Playwright CLI screenshots, impeccable audit, critique, and refine commands |
