@@ -26,7 +26,7 @@ template.
 | `local`        | `local-validation.md`    | Validate the local app with deterministic tests         |
 | `deployed`     | `deployed-validation.md` | Validate the deployed app with deterministic tests      |
 | `azure-deploy` | `azure-deploy.md`        | Deploy to Azure Container Apps with CI/CD               |
-| `aesthetics`   | `aesthetics.md`          | Screenshot-driven visual defect hunt and fix            |
+| `aesthetics`   | `aesthetics.md`          | Screenshot-driven visual review and fix via impeccable  |
 
 ## Workflow
 
@@ -66,6 +66,11 @@ Determine, from the code and configuration (not by guessing):
   make creating a missing suite part of the prompt's job
 - Existing Azure config: workflow files, bicep/terraform, `.env.example`,
   CLAUDE.md notes, existing `prompts/*.md`
+- For `aesthetics`: the frontend source directory (`{{FRONTEND_DIR}}`,
+  new in 6.3.0), each routed page's
+  source file (the target the prompt hands to impeccable), the app's
+  themes, and whether `PRODUCT.md` and `DESIGN.md` exist (the prompt runs
+  without them; note their absence in the generation header)
 
 ### 4. Resolve placeholders
 
@@ -92,7 +97,8 @@ a secret, keep the retrieval command, not the retrieved value.
   offers variants (e.g. the deployed template's auth variants), keep
   exactly one and delete the rest.
 - Expand generics with repo detail: real endpoint tables, real protected
-  route lists, real desktop/mobile page states for aesthetics passes.
+  route lists, real desktop/mobile page states (each page with its route
+  and source file) for aesthetics passes.
 - Keep the template's autonomous-work framing, progress-file mechanism,
   blocker rules, and completion checklist.
 - Keep validation deterministic in `local`, `deployed`, and `azure-deploy`
@@ -106,7 +112,14 @@ a secret, keep the retrieval command, not the retrieved value.
 - `aesthetics` is screenshot-driven by design: keep its browser automation
   on the **Playwright CLI**, never the Playwright MCP server — preserve its
   "Browser Automation -- Playwright CLI" section and its `playwright-cli`
-  references.
+  references. Its design judgement comes from the impeccable plugin
+  (`impeccable@impeccable`, marketplace `pbakaus/impeccable`): keep the
+  "Design Engine -- impeccable" section, the per-page `/impeccable audit`
+  and `/impeccable critique` review, and the fix routing through
+  impeccable's refine commands as written, and do not add hand-written
+  defect categories beyond its rendered cross-check. If impeccable is not
+  installed where you are tailoring, say so in the report with its install
+  commands.
 - Keep git usage safe: staging must name explicit file paths (never
   `git add .` or bare directory adds); no history rewrites; nothing force.
 

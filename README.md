@@ -98,7 +98,10 @@ Git workflow skills. See [plugins/kokko-git/README.md](plugins/kokko-git/README.
 ### kokko-validation
 
 Generic master-prompt templates (local validation, deployed validation,
-Azure deployment, aesthetics) and a skill that tailors them to the repo. See
+Azure deployment, aesthetics) and a skill that tailors them to the repo. The
+aesthetics prompt reviews and fixes the UI through the
+[impeccable](https://github.com/pbakaus/impeccable) plugin
+(`impeccable@impeccable`), which it needs installed. See
 [plugins/kokko-validation/README.md](plugins/kokko-validation/README.md).
 
 <!-- generated:skills:kokko-validation start -->

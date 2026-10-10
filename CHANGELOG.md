@@ -6,6 +6,32 @@ Changelog](https://keepachangelog.com/). Releases before 3.6.0 are
 documented in [GitHub
 Releases](https://github.com/kokko-ng/kokko-skills/releases) only.
 
+## 6.3.0 - 2026-10-10
+
+### Changed
+
+- kokko-validation `/tailor aesthetics`: the aesthetics prompt takes its
+  design judgement from the [impeccable](https://github.com/pbakaus/impeccable)
+  plugin, which it now needs installed (`impeccable@impeccable`; the prompt
+  carries the install commands and stops if it is missing). playwright-cli
+  still screenshots every page and state at 1280px and 375px, per theme;
+  `/impeccable audit` and `/impeccable critique` then review each page
+  against those screenshots, every verified finding goes into the defect
+  ledger with its severity, rule, and impeccable command, and impeccable's
+  refine commands (`polish`, `layout`, `typeset`, `adapt`, `clarify`,
+  `harden`, `quieter`, `colorize`, `optimize`) make the fixes inside the
+  prompt's frontend-only scope. The prompt runs impeccable's context step
+  once per session, proceeds on the incumbent design when `PRODUCT.md` or
+  `DESIGN.md` is missing, answers impeccable's questions in advance so the
+  run stays unattended, and acts on the design detector hook's findings.
+  impeccable's bounded passes apply to each command run; the prompt's
+  completion checklist stays the definition of done.
+- The aesthetics prompt's hand-written defect categories shrink to a
+  rendered cross-check of what impeccable cannot see from source (stacking,
+  flashes, distorted media, colliding text, theme-switch artefacts). New
+  placeholder `FRONTEND_DIR`; pages in the state lists now carry their
+  source file.
+
 ## 6.2.2 - 2026-10-09
 
 ### Fixed
