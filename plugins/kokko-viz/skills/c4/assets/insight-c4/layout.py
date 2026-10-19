@@ -42,6 +42,7 @@ MIN_DX = 20  # below this a zigzag cannot hold two r=8 arcs; straighten instead
 PORT_MIN_INSET = 12  # ports never sit within this of a corner
 TEXT_PAD = 14  # clear air under the last baseline, for descenders
 BOX_PAD = 12  # minimum air above and below a centred text block
+TAG_CLEAR = 24  # a tagged node's text starts below the tag box (y+6 to y+18) and 6px of air
 
 
 def text_geometry(node: "Node", ramp: dict) -> tuple[list[float], float | None, int]:
@@ -66,8 +67,14 @@ def text_geometry(node: "Node", ramp: dict) -> tuple[list[float], float | None, 
         needed = (sub if sub is not None else names[-1]) + TEXT_PAD
         return names, sub, max(ramp["icon_node_h"], needed)
     block = node.name_lines * step + (16 if node.sublabel else 0)
-    height = max(ramp["node_h"], block + 2 * BOX_PAD)
-    first = (height - block) / 2 + size
+    # A two-line name centred in a short box rises into the tag box in the top-left
+    # corner, so a tagged node's text never starts above TAG_CLEAR, and the box grows to
+    # keep BOX_PAD under it. Text is centred in the drawn box (the row's height) when
+    # that is known, not in the smaller height this node alone would need.
+    top = TAG_CLEAR if node.tag and node.kind != "retired" else BOX_PAD
+    height = max(ramp["node_h"], block + 2 * BOX_PAD, top + block + BOX_PAD)
+    drawn = max(height, node.height)
+    first = max((drawn - block) / 2, top) + size
     names = [first + k * step for k in range(node.name_lines)]
     sub = names[-1] + 16 if node.sublabel else None
     return names, sub, height

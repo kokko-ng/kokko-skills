@@ -55,6 +55,7 @@ from tokens import (  # noqa: E402
     SOFT,
     TREATMENTS,
     rgba,
+    snap,
 )
 
 # Average glyph advance as a fraction of the font size, measured on Inter 600
@@ -542,7 +543,7 @@ class Diagram:
         edge_kinds = sorted({e.kind for e in self.edges}, key=lambda k: list(EDGE_COLOURS).index(k))
         items = [(k, KIND_LABELS[k], "node") for k in kinds]
         items += [(k, EDGE_LABELS[k], "edge") for k in edge_kinds if k != "default" or len(edge_kinds) > 1]
-        if any(e.dashed for e in self.edges):
+        if any(e.dashed for e in self.edges) and "optional" not in kinds:
             items.append(("dashed", "Optional or async", "edge"))
         y = self.height - LEGEND_H + 20
         out = [
@@ -552,9 +553,12 @@ class Diagram:
             f'letter-spacing="0.14em">LEGEND</text>',
         ]
         x = MARGIN + 72
+        # Each item is as wide as its label, and a row that is full wraps to the next one
+        # instead of silently dropping the remaining items.
         for key, label, sort in items:
-            if x + 160 > self.width - MARGIN:
-                break
+            step = snap(24 + text_w(label, 8, mono=True) + 0.06 * 8 * len(label) + 24)
+            if x + step - 24 > self.width - MARGIN:
+                x, y = MARGIN + 72, y + 20
             if sort == "node":
                 fill, stroke, dash, _ = TREATMENTS[key]
                 dasha = f' stroke-dasharray="{dash}"' if dash else ""
@@ -576,7 +580,7 @@ class Diagram:
                 f'<text x="{x + 24}" y="{y + 3}" fill="{MUTED}" font-size="8" font-family="{MONO}" '
                 f'letter-spacing="0.06em">{esc(label)}</text>'
             )
-            x += 160
+            x += step
         return out
 
     # -- assembly --------------------------------------------------------
@@ -662,6 +666,8 @@ def check(d: Diagram) -> list[str]:
             )
         if name_ys[0] - d.ramp["node"] < 4:
             issues.append(f"node {n.id}: first name line sits on the top edge")
+        if n.tag and n.kind != "retired" and name_ys[0] - d.ramp["node"] < 18:
+            issues.append(f"node {n.id}: first name line runs into the tag box")
         widest = max(
             [text_w(line, d.ramp["node"]) for line in wrap(n.name, n.width, d.ramp["node"])]
             + [text_w(n.sublabel, d.ramp["sublabel"], mono=True)]
