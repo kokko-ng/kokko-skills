@@ -6,6 +6,20 @@ Changelog](https://keepachangelog.com/). Releases before 3.6.0 are
 documented in [GitHub
 Releases](https://github.com/kokko-ng/kokko-skills/releases) only.
 
+## 6.3.1 - 2026-10-19
+
+### Fixed
+
+- kokko-viz `c4` renderer: a node name that wraps to two lines no longer runs
+  into the type tag in the box's top-left corner. Text in a tagged node starts
+  below the tag, the box grows when it needs to, and text is centred in the
+  box as drawn (the row's height) rather than in the smaller box the node
+  alone would need. `--check` reports a name line that reaches the tag.
+- kokko-viz `c4` renderer: the legend no longer drops items that do not fit on
+  one line. Each item is as wide as its label and the legend wraps onto a
+  second line; a node kind and a dashed edge that share the label "Optional
+  or async" appear once.
+
 ## 6.3.0 - 2026-10-10
 
 ### Changed

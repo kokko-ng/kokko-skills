@@ -111,7 +111,7 @@ RADIUS_TAG = 2
 ELBOW_R = 8  # every bend is a quarter arc at this radius
 CHANNEL_STEP = 16  # >= 12px apart, on the 4px grid
 CHANNEL_INSET = 24  # first channel's offset from a row edge
-LEGEND_H = 60
+LEGEND_H = 72  # room for a legend that wraps onto a second line
 NODE_W = 160  # default node width
 NODE_GAP = 32  # default gap between nodes in a row
 ZONE_HEADROOM = 32  # zone top sits this far above the first enclosed node
