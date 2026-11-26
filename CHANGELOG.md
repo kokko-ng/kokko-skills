@@ -6,6 +6,20 @@ Changelog](https://keepachangelog.com/). Releases before 3.6.0 are
 documented in [GitHub
 Releases](https://github.com/kokko-ng/kokko-skills/releases) only.
 
+## 8.0.1 - 2026-11-26
+
+### Fixed
+
+- kokko-viz `c4` renderer: a relationship that skips a row took a long
+  detour. Its side lane ran at the edge of the canvas, which on a canvas
+  wider than its content is far from the diagram, and every lane was put on
+  the left, because the side was chosen before the nodes had positions. A
+  lane now runs one inset outside the outermost node or boundary, on the
+  side its two ends lean towards.
+- kokko-viz `c4` renderer: on a diagram that fills its canvas, the innermost
+  side lane could run just inside a boundary's edge. A side that carries
+  lanes now keeps the boundary's padding clear.
+
 ## 8.0.0 - 2026-11-26
 
 Major: kokko-viz diagrams now follow the C4 model's labelling semantics

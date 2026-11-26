@@ -1,6 +1,6 @@
 {
   "name": "kokko-validation",
-  "version": "8.0.0",
+  "version": "8.0.1",
   "description": "Work through feedback with a verified ledger, and tailor an aesthetics master prompt to the current repo.",
   "author": {
     "name": "kokko-ng"

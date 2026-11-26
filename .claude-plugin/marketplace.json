@@ -8,7 +8,7 @@
       "name": "kokko-git",
       "source": "./plugins/kokko-git/",
       "description": "Git workflow skills for commit and push, landing work through deploy and merge, releases, syncing, branch and worktree pruning, and timesheet write-ups, on GitHub and Azure DevOps.",
-      "version": "8.0.0",
+      "version": "8.0.1",
       "author": {
         "name": "kokko-ng"
       }
@@ -17,7 +17,7 @@
       "name": "kokko-viz",
       "source": "./plugins/kokko-viz/",
       "description": "C4 architecture visualization skills for generating, updating, and verifying C4 model diagrams, drawn in the Insight Enterprises design system.",
-      "version": "8.0.0",
+      "version": "8.0.1",
       "author": {
         "name": "kokko-ng"
       }
@@ -26,7 +26,7 @@
       "name": "kokko-infra",
       "source": "./plugins/kokko-infra/",
       "description": "Azure skills for demo and sandbox environments: giving people access, and waking environments, keeping them up, and putting them back to sleep.",
-      "version": "8.0.0",
+      "version": "8.0.1",
       "author": {
         "name": "kokko-ng"
       }
@@ -35,7 +35,7 @@
       "name": "kokko-ai-config",
       "source": "./plugins/kokko-ai-config/",
       "description": "AI configuration upkeep: verify CLAUDE.md and README files against the codebase, and carry a session's corrections upstream into the skill or plugin that caused them.",
-      "version": "8.0.0",
+      "version": "8.0.1",
       "author": {
         "name": "kokko-ng"
       }
@@ -44,7 +44,7 @@
       "name": "kokko-notifications",
       "source": "./plugins/kokko-notifications/",
       "description": "Sound notification hooks for Claude Code task completion events.",
-      "version": "8.0.0",
+      "version": "8.0.1",
       "author": {
         "name": "kokko-ng"
       }
@@ -53,7 +53,7 @@
       "name": "kokko-validation",
       "source": "./plugins/kokko-validation/",
       "description": "Work through feedback with a verified ledger, and tailor an aesthetics master prompt to the current repo.",
-      "version": "8.0.0",
+      "version": "8.0.1",
       "author": {
         "name": "kokko-ng"
       }
@@ -62,7 +62,7 @@
       "name": "kokko-env",
       "source": "./plugins/kokko-env/",
       "description": "Dev environment setup and maintenance: install the kokko-devcontainer template into a project, merge newer template changes into its devcontainer config, and update Claude Code plugins to their latest marketplace versions.",
-      "version": "8.0.0",
+      "version": "8.0.1",
       "author": {
         "name": "kokko-ng"
       }
