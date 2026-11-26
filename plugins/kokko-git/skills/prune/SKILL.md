@@ -22,7 +22,14 @@ run: `local`, `remote`, `merged`, `worktrees`, or an age threshold in days
 
 ```bash
 ls -d */.git
+git -C <dir> rev-parse --path-format=absolute --git-common-dir
 ```
+
+A linked worktree also has a `.git` entry, so the listing mixes repos with
+worktrees of repos, some of whose main checkout lives somewhere else. The
+second command tells them apart: directories that print the same common
+directory are one repo. Run the steps once per repo, from its main worktree
+(the first entry of `git worktree list`).
 
 With more than one repo, run steps 1 to 3 in each with `git -C <repo>`,
 build one report with a Repo column, and ask once in step 4. A repo that
@@ -106,6 +113,7 @@ git -C <worktree path> log --oneline @{upstream}..HEAD
 | ----- | -------------- |
 | Clean, branch merged into `<base>` or its remote gone | Remove, then delete the branch |
 | Clean, branch unmerged but fully pushed | Keep unless older than the age threshold; then offer removal (the branch stays on the remote) |
+| Clean, detached HEAD | Remove when `git branch -r --contains <sha>` names a remote branch; otherwise treat its commits as not pushed |
 | Uncommitted changes, or commits not pushed anywhere | Keep. Report what is in it; never offer it under a bulk option |
 | Directory missing (shown by the dry run) | Prune the stale entry |
 
