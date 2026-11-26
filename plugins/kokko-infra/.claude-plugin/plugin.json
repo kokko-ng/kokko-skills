@@ -1,6 +1,6 @@
 {
   "name": "kokko-infra",
-  "version": "7.0.0",
+  "version": "7.0.1",
   "description": "Azure skills for demo and sandbox environments: giving people access, and waking environments, keeping them up, and putting them back to sleep.",
   "author": {
     "name": "kokko-ng"

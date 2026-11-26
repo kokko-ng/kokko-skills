@@ -6,6 +6,25 @@ Changelog](https://keepachangelog.com/). Releases before 3.6.0 are
 documented in [GitHub
 Releases](https://github.com/kokko-ng/kokko-skills/releases) only.
 
+## 7.0.1 - 2026-11-26
+
+Fixes from the first runs of the new skills against real repos and a real
+demo environment.
+
+### Fixed
+
+- kokko-git `/worklog` and `/prune`: in a directory of repos, a linked
+  worktree was read as a repo of its own, so its repo's commits were counted
+  again under the worktree's folder name. Directories are now grouped by
+  their common git directory, and `/worklog` names a project after its
+  remote.
+- kokko-git `/prune`: a clean worktree on a detached HEAD has a row of its
+  own; it is removable when a remote branch contains its commit.
+- kokko-infra `/az-demo`: the resource listing printed names only, because
+  table output drops a column called `type`. `status` now reports a
+  Container App's replica count, since the app reads `Running` at zero
+  replicas.
+
 ## 7.0.0 - 2026-11-26
 
 Major: three skills and three templates are removed. The rest of the release
