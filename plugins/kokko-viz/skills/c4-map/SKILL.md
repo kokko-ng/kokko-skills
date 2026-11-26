@@ -15,7 +15,7 @@ Map the codebase architecture as a hierarchical C4 model
 empty, or when the first argument starts with `--`: the current project
 root) — scope every search to it and state it in every phase prompt below.
 
-Two optional flags may appear anywhere in `$ARGUMENTS` (rule 6 of the `c4`
+Two optional flags may appear anywhere in `$ARGUMENTS` (rule 7 of the `c4`
 skill): `--eli5` adds the plain-language companion, and `--export <dir>`
 copies the finished model to `<dir>/<system-id>/`.
 
@@ -58,7 +58,16 @@ see `c4-templates.md#output-structure`.
 
 Diagrams are Insight-branded and generated from JSON specs by the renderer —
 there is no PlantUML here. A phase that produces a diagram produces a
-`<level>.c4.json` per `insight-diagrams.md#spec-schema`.
+schema 2 `<level>.c4.json` per `insight-diagrams.md#spec-schema`.
+
+Every diagram follows the C4 labelling semantics in
+`insight-diagrams.md#c4-semantics` (rule 5 of the `c4` skill), and the
+renderer refuses one that does not. So every phase collects what a label
+needs as it goes: each element's C4 type, its technology (containers and
+components), a one-sentence description and whether the team owns it; each
+relationship's direction, a verb phrase ending on its preposition, and its
+technology or protocol. A shared library, package or SDK is not a container
+and gets no box.
 
 ---
 
@@ -74,10 +83,17 @@ Parameters:
 
     GOALS:
     1. Identify system name, create kebab-case SYSTEM_ID
-    2. Define system boundary and purpose
-    3. Find actors (auth patterns, API consumers, user roles)
-    4. Map external systems (SDK imports, env vars, HTTP clients)
-    5. Identify preliminary containers (deployable units)
+    2. Define system boundary (what this team owns) and purpose
+    3. Find people (auth patterns, API consumers, user roles)
+    4. Map external software systems: what the system calls or is called
+       by and the team does not own (SDK imports, env vars, HTTP clients).
+       An owned data store hosted in the cloud is a container, not external.
+    5. Identify preliminary containers: applications and data stores that
+       must run for the system to work. List shared libraries, packages,
+       SDKs and message buses under NOT_CONTAINERS instead.
+    6. Write each element's description as one sentence ending in a full
+       stop, and each relationship as a verb phrase ending on its
+       preposition (insight-diagrams.md#c4-semantics)
 
     TEMPLATES: <absolute path from above>
     DIAGRAMS: <absolute path from above>
@@ -105,11 +121,15 @@ Parameters:
 
     GOALS:
     For each preliminary container:
-    1. Validate it's a distinct deployable unit
-    2. Identify technology stack (framework, runtime)
-    3. Map inter-container communication (protocols)
+    1. Validate it is a C4 container: an application or data store with its
+       own runtime boundary (insight-diagrams.md#what-is-and-is-not-a-container).
+       A SPA and the server that serves it are two; a library is none.
+    2. Identify its technology for the [Container: ...] line: language and
+       framework, or the store and what it is (PostgreSQL 16 database schema)
+    3. Map inter-container communication: a verb-phrase label and the
+       technology or protocol of every relationship (JSON/HTTPS, SQL/TLS)
     4. Identify preliminary components within each
-    5. Validate external system boundaries
+    5. Validate external system boundaries: external means not owned
 
     TEMPLATES: <absolute path from above>
     DIAGRAMS: <absolute path from above>
@@ -137,10 +157,13 @@ Parameters:
 
     GOALS:
     For each component in each container:
-    1. Validate coherent module with clear responsibility
-    2. Identify internal dependencies (same container)
-    3. Identify cross-container dependencies
-    4. Map component interfaces/contracts
+    1. Validate it is a C4 component: related functionality behind a
+       well-defined interface, not a folder, package or utility module
+    2. Identify its technology for the [Component: ...] line (the framework
+       construct: FastAPI router, Spring bean, React context)
+    3. Identify internal dependencies (same container) with labels
+    4. Identify cross-container dependencies with labels and technology
+    5. Map component interfaces/contracts
 
     TEMPLATES: <absolute path from above>
     DIAGRAMS: <absolute path from above>
@@ -172,6 +195,10 @@ Parameters:
     3. Coverage Gaps: Missing elements, empty containers
     4. Naming Conflicts: Duplicate IDs, invalid folder names
     5. Structural Issues: Empty containers, deep nesting
+    6. C4 semantics: every element has its type, technology (containers and
+       components) and description, every relationship its label and, with
+       a container, its technology; no library or package is a container;
+       one name per element across levels (insight-diagrams.md#lint-rules)
 
     TEMPLATES: <absolute path from above>
     OUTPUT:
@@ -235,16 +262,25 @@ Write the spec and the document at each level. Markdown skeletons are in
 `c4-templates.md#markdown-templates`; the spec schema and the row conventions
 are in `insight-diagrams.md#spec-schema`.
 
-| Level | Files |
-| ----- | ----- |
-| System | `context.c4.json`, `context.md` |
-| Container | `container.c4.json`, `container.md` |
-| Component | `component.c4.json`, `component.md` |
+| Folder | Files | C4 diagram (`level`) |
+| ------ | ----- | -------------------- |
+| `<system>/` | `context.c4.json`, `context.md` | System Context (`context`) |
+| `<system>/` | `containers.c4.json`, `containers.md` | Container (`container`) |
+| `containers/<id>/` | `container.c4.json`, `container.md` | Component diagram of that container (`component`) |
+| `components/<id>/` | `component.c4.json`, `component.md` | Component diagram focused on that component (`component`) |
 
-Per diagram: one `focal` node (the element the diagram is about), official
-Azure or Fabric icons on every Azure or Fabric node and on nothing else,
-boundaries as zones, 16 nodes maximum. Give each node an `href` to its source
-directory or child document so the HTML page is navigable.
+Per diagram, as `insight-diagrams.md#diagram-types-and-files` sets out: the
+boundaries its scope requires (a container diagram's software system
+boundary; a component diagram's container boundary inside its system
+boundary), every element with `type`, `technology` where required and a
+one-sentence `description`, every edge with a verb-phrase `label` and the
+`technology` its endpoints require, every non-common acronym in `acronyms`,
+at most one `focus`, official Azure or Fabric icons on every Azure or Fabric
+node and on nothing else, 16 nodes maximum. An element and a relationship
+are written identically in every spec they appear in. Give each node an
+`href` to its source directory or child document so the HTML page is
+navigable. Copy the shape from `assets/insight-c4/examples/` under the
+`c4` skill.
 
 Each markdown file must include a parent navigation link, a drill-down table
 to children, and a `<!-- Last updated: YYYY-MM-DD -->` timestamp.
@@ -253,12 +289,16 @@ to children, and a `<!-- Last updated: YYYY-MM-DD -->` timestamp.
 
 ```bash
 python3 codemap/.insight-c4/render.py 'codemap/**/*.c4.json' --png
+python3 codemap/.insight-c4/lint.py 'codemap/**/*.svg'
 ```
 
-Every spec must report `ok`. A `FAIL` is a geometry problem — a connector
-behind a node, or a label mask on a node — and it is fixed by changing the
-spec (usually the row order), never by editing the output. Warnings about
-budget or a missing icon are reported to the user, not silently accepted.
+Every spec must report `ok` and every SVG must lint `ok`. A
+`FAIL (C4 rules)` lists each broken rule by id (`N3`, `L5`, `S3`, ...;
+`insight-diagrams.md#lint-rules`) and is fixed in the spec from the code, by
+adding the missing technology, rewriting the label or moving the element.
+A `FAIL (layout)` is fixed by changing the row order. Never edit the
+output. `review` findings, budget warnings and missing icons are reported to
+the user, not silently accepted.
 
 ### Step 4: Write README
 
@@ -293,16 +333,18 @@ nothing.
 ## System: <system-id>
 
 ## Structure Generated
-- Context level: 1 diagram
-- Containers: X containers
+- System context and container diagrams: 2
+- Containers: X containers (component diagram each)
 - Components: Y components
+- Not containers (libraries, packages, buses): [list, and where they are described]
 
 ## Files Created
 - Total files: N (specs: X, markdown: Y, rendered: Z)
 
 ## Diagram Checks
 - Renderer: all ok / N failures
-- Warnings: [budget, missing icons, ...]
+- C4 lint: all ok / violations by rule id (e.g. `N3 x2, L5 x1`)
+- Review findings and warnings: [rule id and file each; budget, missing icons, ...]
 
 ## Entry Point
 `codemap/<system-id>/context.md`

@@ -42,55 +42,64 @@ MIN_DX = 20  # below this a zigzag cannot hold two r=8 arcs; straighten instead
 PORT_MIN_INSET = 12  # ports never sit within this of a corner
 TEXT_PAD = 14  # clear air under the last baseline, for descenders
 BOX_PAD = 12  # minimum air above and below a centred text block
-TAG_CLEAR = 24  # a tagged node's text starts below the tag box (y+6 to y+18) and 6px of air
 
 
-def text_geometry(node: "Node", ramp: dict) -> tuple[list[float], float | None, int]:
-    """Baselines for a node's name and sublabel, and the height it needs.
+def text_geometry(
+    node: "Node", ramp: dict
+) -> tuple[list[float], list[float], list[float], int]:
+    """Baselines for a node's name, type line and description, and its height.
 
     One function so the height the row is sized to and the y the text is drawn
     at can never disagree. They did: the icon ramp hard-codes the baselines
-    for a ONE-line name, so a name that wrapped pushed the sublabel through
+    for a ONE-line name, so a name that wrapped pushed the next line through
     the bottom edge of the box.
 
-    Returns (name baselines, sublabel baseline or None, required height), all
-    relative to the node's top edge.
+    Returns (name baselines, type-line baselines, description baselines,
+    required height), all relative to the node's top edge.
     """
-    size = ramp["node"]
-    step = size + 4
+    size, sub, desc = ramp["node"], ramp["sublabel"], ramp["desc"]
+    name_step, type_step, desc_step = size + 4, sub + 3, desc + 3
+    gap = sub + 6
+
+    def stack(first: float) -> tuple[list[float], list[float], list[float]]:
+        names = [first + k * name_step for k in range(node.name_lines)]
+        types = [names[-1] + gap + k * type_step for k in range(node.type_lines)]
+        start = (types[-1] if types else names[-1]) + gap
+        descs = [start + k * desc_step for k in range(node.desc_lines)]
+        return names, types, descs
+
     if node.icon:
         # The insight-diagram-design ramp fixes the first baseline relative to
-        # the icon; extra name lines and the sublabel follow it downwards.
-        first = 62 if ramp["icon"] == 24 else 72
-        names = [first + k * step for k in range(node.name_lines)]
-        sub = names[-1] + 16 if node.sublabel else None
-        needed = (sub if sub is not None else names[-1]) + TEXT_PAD
-        return names, sub, max(ramp["icon_node_h"], needed)
-    block = node.name_lines * step + (16 if node.sublabel else 0)
-    # A two-line name centred in a short box rises into the tag box in the top-left
-    # corner, so a tagged node's text never starts above TAG_CLEAR, and the box grows to
-    # keep BOX_PAD under it. Text is centred in the drawn box (the row's height) when
-    # that is known, not in the smaller height this node alone would need.
-    top = TAG_CLEAR if node.tag and node.kind != "retired" else BOX_PAD
-    height = max(ramp["node_h"], block + 2 * BOX_PAD, top + block + BOX_PAD)
-    drawn = max(height, node.height)
-    first = max((drawn - block) / 2, top) + size
-    names = [first + k * step for k in range(node.name_lines)]
-    sub = names[-1] + 16 if node.sublabel else None
-    return names, sub, height
+        # the icon; the type line and the description follow it downwards.
+        names, types, descs = stack(62 if ramp["icon"] == 24 else 72)
+        last = (descs or types or names)[-1]
+        return names, types, descs, max(ramp["icon_node_h"], int(last + TEXT_PAD))
+    names, types, descs = stack(size)
+    block = (descs or types or names)[-1] + 4
+    height = max(ramp["node_h"], int(block + 2 * BOX_PAD))
+    # Centre in the box as drawn (the row's height, once the row is sized), not in the
+    # smaller height this node alone would need.
+    off = (max(height, node.height) - block) / 2
+    return (
+        [y + off for y in names],
+        [y + off for y in types],
+        [y + off for y in descs],
+        height,
+    )
 
 
 @dataclass
 class Node:
     id: str
     name: str
-    sublabel: str = ""
-    tag: str = ""
-    kind: str = "backend"
+    kind: str = "backend"  # the Insight treatment, derived by rules.treatment
     icon: str = ""
     href: str = ""
     width: int = NODE_W
-    name_lines: int = 1  # set by the caller once the name has been wrapped
+    # set by the caller once the text has been wrapped
+    name_lines: int = 1
+    type_lines: int = 1
+    desc_lines: int = 0
     # filled in by layout
     x: int = 0
     y: int = 0
@@ -122,6 +131,7 @@ class Edge:
     kind: str = "default"
     dashed: bool = False
     label_w: float = 0.0  # set by the caller; decides if a label fits a row gap
+    label_h: float = 0.0  # set by the caller; the label block's mask height
     # filled in by layout
     shape: str = ""
     points: list[tuple[float, float]] = field(default_factory=list)
@@ -135,6 +145,7 @@ class Zone:
     members: list[str]
     security: bool = False
     label_align: str = "left"
+    nest: int = 0  # how many boundaries sit inside this one, set by layout
     x: int = 0
     y: int = 0
     width: int = 0
@@ -152,6 +163,8 @@ class Layout:
         zones: list[Zone],
         ramp: str = "standard",
         min_width: int = 960,
+        top: int = MARGIN,
+        label_h: float = 12,
     ) -> None:
         self.rows = rows
         self.nodes = nodes
@@ -159,8 +172,13 @@ class Layout:
         self.zones = zones
         self.ramp = RAMPS[ramp]
         self.min_width = min_width
+        self.top = top
+        # the first channel sits low enough that a label above it clears the
+        # row above: label top = channel - 8 - label_h, and 6px of air
+        self.inset = max(CHANNEL_INSET, snap(label_h + 14))
         self.width = 0
         self.height = 0
+        self.content_bottom = 0
         self.row_y: list[int] = []
         self.row_h: list[int] = []
         self.gutter_y: list[int] = []
@@ -180,6 +198,7 @@ class Layout:
         # x is independent of gutter heights and channel assignment needs x,
         # so the horizontal pass runs first and the vertical one second.
         self._index_rows()
+        self._nest_zones()
         self._classify_edges()
         self._assign_lanes()
         self._place_x()
@@ -189,7 +208,8 @@ class Layout:
         self._assign_ports()
         self._route()
         self._place_zones()
-        self.height = snap(self.gutter_y[-1] + self.gutter_h[-1] + LEGEND_H)
+        self.content_bottom = snap(self.gutter_y[-1] + self.gutter_h[-1])
+        self.height = self.content_bottom + LEGEND_H
 
     # -- rows ------------------------------------------------------------
 
@@ -200,7 +220,7 @@ class Layout:
         for r, ids in enumerate(self.rows):
             # Every node in a row shares one height, per the design system, so
             # the row takes the tallest node's requirement.
-            h = snap(max(text_geometry(self.nodes[i], self.ramp)[2] for i in ids))
+            h = snap(max(text_geometry(self.nodes[i], self.ramp)[3] for i in ids))
             for nid in ids:
                 self.nodes[nid].height = h
             self.row_h.append(h)
@@ -216,11 +236,13 @@ class Layout:
         lane_w = (self._lanes["left"] + self._lanes["right"]) * CHANNEL_STEP
         if lane_w:
             lane_w += 2 * CHANNEL_INSET
-        self.width = max(self.min_width, snap(content_w + 2 * MARGIN + lane_w))
+        # a nested boundary pads 16px further out per level it encloses
+        extra = 16 * max([z.nest for z in self.zones] + [0])
+        self.width = max(self.min_width, snap(content_w + 2 * (MARGIN + extra) + lane_w))
         left_pad = self._lanes["left"] * CHANNEL_STEP + (CHANNEL_INSET if self._lanes["left"] else 0)
         right_pad = self._lanes["right"] * CHANNEL_STEP + (CHANNEL_INSET if self._lanes["right"] else 0)
-        band_l = MARGIN + left_pad
-        band_r = self.width - MARGIN - right_pad
+        band_l = MARGIN + extra + left_pad
+        band_r = self.width - MARGIN - extra - right_pad
         for r in range(len(self.rows)):
             x = snap(band_l + (band_r - band_l - self._row_width(r)) / 2)
             for nid in self.rows[r]:
@@ -229,7 +251,7 @@ class Layout:
                 x += n.width + NODE_GAP
 
     def _place_y(self) -> None:
-        y = MARGIN
+        y = self.top
         for r in range(len(self.rows)):
             self.gutter_y.append(y)
             y = snap(y + self.gutter_h[r])
@@ -310,20 +332,42 @@ class Layout:
             return (min(a.cx, b.cx, lx), max(a.cx, b.cx, lx))
         return (a.cx, b.cx)
 
-    def _zone_top_rows(self) -> set[int]:
-        out = set()
+    def _nest_zones(self) -> None:
+        """Count the boundaries inside each one, so nested ones pad apart."""
+        sets = [set(z.members) for z in self.zones]
+
+        def depth(i: int) -> int:
+            inner = [j for j in range(len(sets)) if j != i and sets[j] < sets[i]]
+            return 1 + max(depth(j) for j in inner) if inner else 0
+
+        for i, z in enumerate(self.zones):
+            z.nest = depth(i)
+
+    @staticmethod
+    def zone_pad(z: "Zone") -> int:
+        return 16 + 16 * z.nest
+
+    @staticmethod
+    def zone_headroom(z: "Zone") -> int:
+        return ZONE_HEADROOM + 24 * z.nest
+
+    def _zone_rows(self) -> tuple[dict[int, int], dict[int, int]]:
+        """Row -> headroom needed above it, and row -> pad needed below it."""
+        tops: dict[int, int] = {}
+        bottoms: dict[int, int] = {}
         for z in self.zones:
             rows = [self.nodes[m].row for m in z.members if m in self.nodes]
             if rows:
-                out.add(min(rows))
-        return out
+                tops[min(rows)] = max(tops.get(min(rows), 0), self.zone_headroom(z))
+                bottoms[max(rows)] = max(bottoms.get(max(rows), 0), self.zone_pad(z))
+        return tops, bottoms
 
     def _size_gutters(self) -> None:
         n_rows = len(self.rows)
         # Channels fill a gutter from its top down, so a gutter that a zone's
         # headroom band reaches into is grown at the bottom: the wash and its
         # label then sit in clear air instead of under a connector.
-        zone_tops = self._zone_top_rows()
+        zone_tops, zone_bottoms = self._zone_rows()
         for g in range(n_rows + 1):
             c = self._gutter_depth.get(g, 0)
             if 0 < g < n_rows:
@@ -332,9 +376,12 @@ class Layout:
                 floor = max(BOTTOM_PAD, MIN_EDGE_GUTTER if c else 0)
             else:
                 floor = MIN_EDGE_GUTTER if c else 0
-            h = max(floor, CHANNEL_INSET * 2 + (c - 1) * CHANNEL_STEP) if c else floor
+            h = max(floor, self.inset + (c - 1) * CHANNEL_STEP + CHANNEL_INSET) if c else floor
+            above = zone_bottoms.get(g - 1, 0)
             if g in zone_tops:
-                h = max(h, CHANNEL_INSET + max(0, c - 1) * CHANNEL_STEP + ZONE_HEADROOM + 8)
+                h = max(h, self.inset + max(0, c - 1) * CHANNEL_STEP + zone_tops[g] + 8, above + zone_tops[g] + 8)
+            if above:
+                h = max(h, above + 16)
             self.gutter_h.append(snap(h))
 
     def _assign_lanes(self) -> None:
@@ -437,7 +484,7 @@ class Layout:
     # -- routing -----------------------------------------------------------
 
     def _channel_y(self, g: int, i: int) -> float:
-        return self.gutter_y[g] + CHANNEL_INSET + self._channel_of[(g, i)] * CHANNEL_STEP
+        return self.gutter_y[g] + self.inset + self._channel_of[(g, i)] * CHANNEL_STEP
 
     def _lane_x(self, i: int) -> float:
         side, k = self._lane_of[i]
@@ -556,13 +603,13 @@ class Layout:
         return False
 
     def _place_zones(self) -> None:
-        pad = 16
         for z in self.zones:
             members = [self.nodes[m] for m in z.members if m in self.nodes]
             if not members:
                 continue
+            pad = self.zone_pad(z)
             z.x = snap(min(m.x for m in members) - pad) - 4
             z.width = snap(max(m.right for m in members) + pad - z.x)
             top = min(m.y for m in members)
-            z.y = snap(top - ZONE_HEADROOM)
+            z.y = snap(top - self.zone_headroom(z))
             z.height = snap(max(m.bottom for m in members) + pad - z.y)

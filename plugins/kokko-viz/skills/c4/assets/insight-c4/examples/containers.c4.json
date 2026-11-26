@@ -1,0 +1,63 @@
+{
+  "schema": 2,
+  "level": "container",
+  "subtitle": "The applications and data stores inside the Recipe Planner",
+  "desc": "The cook uses a Vue single-page app, which calls a FastAPI service that stores data in PostgreSQL and calls an e-mail service and Azure OpenAI.",
+  "rows": [
+    ["cook"],
+    ["spa"],
+    ["api"],
+    ["db"],
+    ["email", "aoai"]
+  ],
+  "nodes": {
+    "cook": {
+      "name": "Home Cook",
+      "type": "Person",
+      "description": "Plans weekly meals and shops for them."
+    },
+    "spa": {
+      "name": "Planner UI",
+      "type": "Container",
+      "technology": "TypeScript, Vue 3",
+      "description": "Lets the cook browse recipes and plan the week in a browser."
+    },
+    "api": {
+      "name": "Planner API",
+      "type": "Container",
+      "technology": "Python 3.12, FastAPI",
+      "focus": true,
+      "description": "Serves recipes, meal plans and shopping lists."
+    },
+    "db": {
+      "name": "Recipe Database",
+      "type": "Container",
+      "technology": "PostgreSQL 16 database schema",
+      "store": true,
+      "description": "Stores recipes, meal plans and shopping lists."
+    },
+    "email": {
+      "name": "E-mail Service",
+      "type": "Software System",
+      "external": true,
+      "description": "Delivers shopping lists to the cook by e-mail."
+    },
+    "aoai": {
+      "name": "Azure OpenAI",
+      "type": "Software System",
+      "external": true,
+      "icon": "azure-openai",
+      "description": "Suggests recipes from a list of ingredients."
+    }
+  },
+  "boundaries": [
+    { "name": "Recipe Planner", "type": "Software System", "members": ["spa", "api", "db"] }
+  ],
+  "edges": [
+    { "from": "cook", "to": "spa", "label": "Plans meals and shopping using" },
+    { "from": "spa", "to": "api", "label": "Makes API requests to", "technology": "JSON/HTTPS" },
+    { "from": "api", "to": "db", "label": "Reads from and writes to", "technology": "SQL/TLS" },
+    { "from": "api", "to": "email", "label": "Sends shopping lists using", "technology": "SMTP/TLS", "kind": "link" },
+    { "from": "api", "to": "aoai", "label": "Requests recipe suggestions from", "technology": "JSON/HTTPS", "kind": "link" }
+  ]
+}

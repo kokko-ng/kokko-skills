@@ -33,7 +33,17 @@ Read the relevant section yourself whenever a check cites a
 Diagrams are Insight-branded and generated from `<level>.c4.json` specs.
 A `.puml` under `codemap/`, or the `codemap/.c4-plantuml/` library, is a
 migration leftover: convert it per `c4-templates.md#migrating-a-plantuml-codemap` and
-delete it. That conversion is a structural fix, so it runs in Phase 4A.
+delete it. A `.c4.json` without `"schema": 2` is a schema 1 spec the
+renderer refuses: upgrade it per
+`insight-diagrams.md#upgrading-a-schema-1-spec`. A model with no
+`containers.c4.json` is missing its Container diagram. All three are
+structural fixes, so they run in Phase 4A.
+
+What this skill verifies the diagrams against is the C4 labelling semantics
+(rule 5 of the `c4` skill, `insight-diagrams.md#c4-semantics`) and the 36
+C4 lint rules (`insight-diagrams.md#lint-rules`). Every diagram finding is
+reported with its rule id; `n/a` rules (L7, S2, S5, S6) belong to diagram
+types this skill does not draw.
 
 This skill runs forked: check output stays here and the caller receives the
 summary. Nobody can answer a question mid-run, so report and stop instead
@@ -46,7 +56,7 @@ model and effort come from their own frontmatter.
 ## Orchestration
 
 ```text
-Phase 1: Prep -> Phase 2: Parallel Verification (5 checks) -> Phase 3: Synthesis
+Phase 1: Prep -> Phase 2: Parallel Verification (6 checks) -> Phase 3: Synthesis
 -> Phase 4: Apply Fixes -> Phase 5: Re-Verify -> Phase 6: Finalize
 ```
 
@@ -55,7 +65,7 @@ Phase 1: Prep -> Phase 2: Parallel Verification (5 checks) -> Phase 3: Synthesis
 ## Phase 1: Preparation
 
 The system to verify is `$0`, unless `$0` starts with `--`: the flags
-`--eli5` and `--export <dir>` (rule 6 of the `c4` skill) may appear anywhere
+`--eli5` and `--export <dir>` (rule 7 of the `c4` skill) may appear anywhere
 in `$ARGUMENTS` and are not a system id. If a system id was given, use it as
 `SYSTEM_ID` and verify `codemap/<SYSTEM_ID>/` exists — report the error and
 stop if it does not. With no system id:
@@ -107,19 +117,35 @@ names match diagram IDs; every source file or code element named in a `.md`
 is a hyperlink to the actual file that resolves on GitHub (per
 `c4-templates.md#source-file-links`) — bare-text file references are issues.
 
-**4. Diagram Quality** (`score: X/6`): every level has a `<level>.c4.json`
-that the renderer accepts; node `kind` matches the C4 element per
-`insight-diagrams.md#c4-to-insight`; every Azure or Fabric node carries its
-official icon and no other node carries one; exactly one `focal` node, two at
-the most; within budget (16 nodes, 24 edges, 3 zones) and not sparse; no
-orphan nodes. Run the renderer's own checks as part of this:
+**4. Diagram Quality** (`score: X/6`), the judgment half of the C4 rules
+(`insight-diagrams.md#checks-the-renderer-cannot-make`): every element is at
+the right level of abstraction (no library, package, folder or team drawn
+as a container or component; data stores drawn as containers); `type`,
+`external` and `store` match the code and its ownership; every
+`technology` matches the manifests and infrastructure; every relationship
+label starts with a verb and matches the arrow's direction; every Azure or
+Fabric node carries its official icon and no other node carries one; within
+budget (16 nodes, 24 edges, 3 boundaries) and not sparse. Report each
+finding with the rule id it falls under (S7, N7, N3, L3, ...).
+
+**5. Render Pairing** is deterministic, so run it yourself rather than
+spawning a subagent.
+
+**6. C4 Rules** is deterministic too, so run it yourself: the renderer's
+checks on every spec (including the cross-diagram rules X1-X3, which need
+the whole system in one run) and the linter on every rendered SVG:
 
 ```bash
 python3 codemap/.insight-c4/render.py 'codemap/'"$SYSTEM_ID"'/**/*.c4.json' --check
+python3 codemap/.insight-c4/lint.py 'codemap/'"$SYSTEM_ID"'/**/*.svg' --json
 ```
 
-**5. Render Pairing** is deterministic, so run it yourself rather than
-spawning a subagent. Each level's `.md` pairs with a same-named spec and
+Record every finding as an issue with `category: "c4_rules"` and its `rule`
+id (per `c4-templates.md#validation-issue-schema`), `error` for a failing
+finding and `info` for a `review` one. Score it as the number of distinct
+rules violated and the number of violations.
+
+For render pairing, each level's `.md` pairs with a same-named spec and
 three rendered files, every rendered file has a spec behind it, and a
 rendered file is stale when its spec is newer:
 
@@ -141,13 +167,15 @@ find . -name "*.c4.json" | while read -r spec; do
   done
 done
 find . -name "*.puml" | sed 's/^/plantuml_leftover: /'
+find . -name "*.c4.json" -exec grep -L '"schema": *2' {} + | sed 's/^/schema_1: /'
+[ -f containers.c4.json ] || echo "missing: ./containers.c4.json"
 cd - >/dev/null
 ls -d codemap/.c4-plantuml 2>/dev/null | sed 's/^/plantuml_leftover: /'
 ```
 
 Record its output as the fifth check's findings (`missing`, `orphan`,
-`stale`, `plantuml_leftover`). On a fresh clone every file looks stale by
-mtime, so confirm against commit dates before acting.
+`stale`, `plantuml_leftover`, `schema_1`). On a fresh clone every file
+looks stale by mtime, so confirm against commit dates before acting.
 
 Wait for all four agents to complete.
 
@@ -161,12 +189,13 @@ Parameters:
   subagent_type: "kokko-viz:c4-mapper"
   description: "Synthesize verification"
   prompt: |
-    Synthesize findings from all five verification checks.
+    Synthesize findings from all six verification checks.
 
     TEMPLATES: <absolute path from above>
 
     OUTPUTS:
-    - Completeness / Accuracy / Hierarchy / Diagram Quality / Render Pairing: <insert each>
+    - Completeness / Accuracy / Hierarchy / Diagram Quality / Render Pairing /
+      C4 Rules: <insert each>
 
     GOALS:
     1. INTERSECTIONS: same issue from multiple checks = higher confidence
@@ -174,8 +203,10 @@ Parameters:
     3. ROOT CAUSE: multiple issues from one cause
     4. PRIORITIZE: severity, frequency, cascade impact, structural first
 
-    FIX ORDER: structural (folders, PlantUML conversion) -> diagrams
-    (.c4.json specs) -> docs (md) -> navigation (links) -> renders
+    FIX ORDER: structural (folders, PlantUML conversion, schema 1 upgrade,
+    a missing containers.c4.json) -> diagrams (.c4.json specs, including
+    every C4 rule finding, keeping its rule id) -> docs (md) -> navigation
+    (links) -> renders
 
     OUTPUT:
     {
@@ -200,10 +231,18 @@ Execute `correction_plan` in order.
 for orphans. Convert any `.puml` to a `<level>.c4.json` per
 `c4-templates.md#migrating-a-plantuml-codemap`, then delete the `.puml` and
 the `codemap/.c4-plantuml/` directory — never leave both formats in the tree.
+Upgrade every schema 1 spec per
+`insight-diagrams.md#upgrading-a-schema-1-spec` (from the code: nothing is
+inferred), and write the missing `containers.c4.json` and `containers.md`.
 
 **4B. Diagrams:** for each fix, spawn a `kokko-viz:c4-mapper` agent given
-the file path, current content, the TEMPLATES path, and the fixes from the
-plan; it returns the complete updated file.
+the file path, current content, the TEMPLATES and DIAGRAMS paths, and the
+fixes from the plan with their rule ids; it returns the complete updated
+file. A rule finding is fixed from the code: the missing technology read
+from the manifest, the label rewritten as the verb phrase the code does,
+the library removed and its relationship moved to the containers that use
+it. A fix to an element or relationship that appears on several diagrams is
+applied to every one of them (X1, X3).
 
 **4C. Documentation:** for missing docs, spawn a `kokko-viz:c4-mapper`
 agent (like a c4-map phase); for link fixes, edit markdown directly.
@@ -220,10 +259,11 @@ python3 codemap/.insight-c4/render.py 'codemap/'"$SYSTEM_ID"'/**/*.c4.json' --pn
 
 ## Phase 5: Re-Verification
 
-The diagram and render checks are deterministic, so run them yourself:
-`render.py ... --check` over the system's specs (every spec must report
-`ok`) and the Phase 2 check-5 pairing snippet (no `missing`, `orphan`,
-`stale` or `plantuml_leftover` lines). Spawn the checker only for the
+The C4 rule and render checks are deterministic, so run them yourself: the
+Phase 2 check-6 commands (every spec reports `ok` from `render.py --check`
+and every SVG `ok` from `lint.py`, with no error finding left) and the
+check-5 pairing snippet (no `missing`, `orphan`, `stale`,
+`plantuml_leftover` or `schema_1` lines). Spawn the checker only for the
 structural and navigation checks, which need the markdown read:
 
 ```yaml
@@ -250,7 +290,8 @@ Parameters:
 ```
 
 Combine its result with your own two checks: the run passes only when all
-three pass.
+three pass. A `review` finding never fails the run but is listed in the
+report with its rule id.
 
 ---
 
@@ -260,6 +301,7 @@ three pass.
 
 ```bash
 python3 codemap/.insight-c4/render.py 'codemap/**/*.c4.json' --png
+python3 codemap/.insight-c4/lint.py 'codemap/**/*.svg'
 ```
 
 **6B. Report the results in your reply.** Per rule 2 of the c4 skill, no
@@ -276,10 +318,18 @@ repo. Deliver the summary as a message:
 | Hierarchy | X/6 |
 | Diagram Quality | X/6 |
 | Render Pairing | X missing, Y stale |
+| C4 Rules | N violations of R rules found, M fixed |
 | Issues Found / Fixed | N / M |
 
+C4 rule violations, by rule id:
+
+| Rule | File | Finding | Status |
+| ---- | ---- | ------- | ------ |
+| N3 | `containers/api/container.c4.json` | element 'api' states no technology | fixed |
+
 Corrections applied: [list by phase]
-Remaining issues: [list any unfixed]
+Remaining issues: [list any unfixed, each C4 finding with its rule id]
+Review findings: [rule id, file, finding]
 ```
 
 **6C.** Update `codemap/README.md` with the verification timestamp (this is
@@ -309,6 +359,7 @@ exception to 6C's limit.
 ## Scores
 - Completeness: X/3 | Accuracy: X% | Hierarchy: X/6 | Diagram Quality: X/6
 - Render Pairing: X missing, Y stale, Z orphan
+- C4 Rules: N violations found, M fixed, K remaining [rule ids]
 
 ## Synthesis
 - Issues found: X | Intersections: Y | Root causes: Z

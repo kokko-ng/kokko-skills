@@ -35,6 +35,13 @@ TREATMENTS: dict[str, tuple[str, str, str | None, str]] = {
     "retired": (PAPER, "rgba(143,135,129,0.60)", "2,3", SOFT),
 }
 
+# The focal border is heavier as well as accented, so "this is the element
+# the diagram is about" survives a greyscale print (C4: colour is never the
+# only carrier of meaning).
+NODE_STROKE_W: dict[str, float] = {"focal": 2.0}
+NODE_STROKE_W_DEFAULT = 1.0
+ZONE_STROKE_W = 0.8
+
 # Tag-box stroke/text use the node stroke at reduced alpha. Solid strokes get an
 # rgba() twin so the 0.40 / 0.80 variants are expressible.
 STROKE_RGB: dict[str, str] = {
@@ -68,10 +75,13 @@ FONTS_HREF = (
 RAMPS = {
     "standard": {
         "title": 28,
+        "svg_title": 20,
         "node": 12,
         "sublabel": 9,
+        "desc": 9,
         "tag": 7,
         "arrow": 8,
+        "legend": 8,
         "node_h": 80,
         "icon_node_h": 96,
         "icon": 24,
@@ -79,10 +89,13 @@ RAMPS = {
     },
     "presentation": {
         "title": 40,
+        "svg_title": 28,
         "node": 16,
         "sublabel": 12,
+        "desc": 12,
         "tag": 8,
         "arrow": 12,
+        "legend": 12,
         "node_h": 96,
         "icon_node_h": 112,
         "icon": 32,
