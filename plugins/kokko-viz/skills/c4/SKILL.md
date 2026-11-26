@@ -1,6 +1,6 @@
 ---
 name: c4
-description: Authoring rules and shared templates for C4 architecture and codemap documents - Insight-branded diagrams rendered from JSON specs, mandatory source-file hyperlinks, no validation report files, template and diagram conventions. Use when the user asks to generate, update, or verify C4 models, architecture diagrams, or codemap documentation. Trigger on "C4", "codemap", "architecture diagram", or any /c4-map, /c4-update, or /c4-verify run.
+description: Authoring rules and shared templates for C4 architecture and codemap documents - strict C4 element and relationship labels, Insight-branded diagrams rendered from JSON specs, mandatory source-file hyperlinks, no validation report files, template and diagram conventions. Use when the user asks to generate, update, or verify C4 models, architecture diagrams, or codemap documentation. Trigger on "C4", "codemap", "architecture diagram", or any /c4-map, /c4-update, or /c4-verify run.
 ---
 
 # C4 Authoring Skill
@@ -60,27 +60,69 @@ renderer bundled with this skill, from a JSON spec you author:
 
 ```bash
 python3 codemap/.insight-c4/render.py 'codemap/**/*.c4.json' --png
+python3 codemap/.insight-c4/lint.py 'codemap/**/*.svg'
 ```
 
-The renderer is vendored into the model at `codemap/.insight-c4/` so the repo
-regenerates without this plugin; the plugin copy is upstream.
+The renderer and its linter are vendored into the model at
+`codemap/.insight-c4/` so the repo regenerates and checks its diagrams
+without this plugin; the plugin copy is upstream.
 
 **Never hand-edit a generated `.html`, `.svg` or `.png`.** Edit the spec and
 re-run; a hand edit is lost on the next run and puts the figure off brand.
 A rendered file whose spec is newer is stale and must be regenerated. The
-renderer owns colour, type, the connector grammar and the 4px grid, so a
-diagram that renders clean is on brand by construction.
+renderer owns colour, type, the connector grammar, the 4px grid, the title
+and the key, so a diagram that renders clean is on brand and labelled the
+C4 way by construction.
 
 Full grammar, spec schema and budget: `references/insight-diagrams.md`.
 
-### 5. No PlantUML
+### 5. Every diagram follows the C4 model's labelling semantics
+
+C4 states its notation rules as recommendations and shows a house style in
+its examples; here both are mandatory, and the renderer refuses a spec that
+breaks one. In brief (full rules: `references/insight-diagrams.md#c4-semantics`):
+
+- **Element types mean something.** `Person` uses the system. `Software
+  System` delivers value and is owned by one team; everything the team does
+  not own is `"external": true`, whoever hosts it. `Container` is an
+  application or a data store that must run for the system to work. Data
+  stores are containers; a shared library, package, SDK, module or message
+  bus is not, and gets no box. `Component` is functionality behind an
+  interface inside one container, not a folder or package. Code-level
+  elements are not drawn here.
+- **Every element label** reads name, `[Type: technology]`, description:
+  `Planner API`, `[Container: Python 3.12, FastAPI]`, `Serves recipes and
+  meal plans.` People and software systems carry no technology; containers
+  and components always do. The description is one sentence ending in a full
+  stop, never a generic term like "business logic".
+- **Every relationship** is one way and labelled with a sentence-case verb
+  phrase that reads source, label, target and ends on its preposition
+  ("Makes API requests to"), never "Uses". A relationship with a container,
+  or across a container boundary, states its technology (`JSON/HTTPS`); a
+  context diagram and a line with a person state none.
+- **Boundaries** carry the enclosed element's name and type:
+  `Recipe Planner [Software System]`.
+- **Titles** read `<Diagram type> diagram for <scope>` and are derived by the
+  renderer: `System Context diagram for Recipe Planner`, `Container diagram
+  for Recipe Planner`, `Component diagram for Recipe Planner - Planner API`.
+- **Every diagram has a key** explaining every shape, colour, border and line
+  style, arrowhead, icon and acronym it uses; the renderer generates it.
+- **Diagrams agree.** An element and a relationship read the same on every
+  diagram they appear on.
+
+Verification checks the 36 C4 lint rules by id
+(`references/insight-diagrams.md#lint-rules`) with `render.py --check` on the
+specs and `lint.py` on the rendered SVGs, and reports each violation with its
+rule id.
+
+### 6. No PlantUML
 
 A `.puml` under `codemap/` is a leftover from an older codemap format, not a
 second supported format. `/c4-verify` converts one and deletes it. Do not
 add a `.puml`, do not vendor `C4-PlantUML`, and do not reach for `plantuml`
 when the renderer is missing a feature — extend the renderer or the spec.
 
-### 6. Two optional outputs: a plain-language companion and an export
+### 7. Two optional outputs: a plain-language companion and an export
 
 Both are asked for with a flag on `/c4-map`, `/c4-update` or `/c4-verify`,
 or by a request that says as much ("an ELI5 version", "put the codemap in
@@ -105,19 +147,24 @@ cites rather than the whole file.
 
 | Anchor | Contents |
 | ------ | -------- |
-| `#c4-to-insight` | Which Insight treatment each C4 element takes, and the icon rule |
-| `#spec-schema` | The `.c4.json` schema, field by field, with row-design guidance |
-| `#running-it` | The renderer's CLI and flags |
-| `#budget` | Node, edge, zone and accent ceilings, and the one deviation from upstream |
+| `#c4-semantics` | Element types, what is and is not a container, external, boundaries, element and relationship labels, titles, the key |
+| `#diagram-types-and-files` | Which C4 diagram each spec is, and the scope rules per level |
+| `#c4-to-insight` | How each element's Insight treatment is derived, and the icon rule |
+| `#spec-schema` | The schema 2 `.c4.json`, field by field, with row-design guidance |
+| `#upgrading-a-schema-1-spec` | Turning an older spec into one the renderer accepts |
+| `#running-it` | The renderer's and linter's CLI, statuses and flags |
+| `#lint-rules` | The 36 C4 lint rules by id, and who checks each |
+| `#budget` | Node, edge, boundary, accent and label ceilings |
 | `#what-the-renderer-guarantees` | What you do not have to check |
+| `#checks-the-renderer-cannot-make` | The judgment half of the lint rules |
 | `#icons` | Azure and Fabric icon slugs and where the packs live |
 
 `references/c4-templates.md` — the document contract:
 
 | Anchor | Contents |
 | ------ | -------- |
-| `#output-structure` | The `codemap/` folder layout |
-| `#markdown-templates` | `context.md`, `container.md`, `component.md` skeletons |
+| `#output-structure` | The `codemap/` folder layout and which diagram each spec is |
+| `#markdown-templates` | `context.md`, `containers.md`, `container.md`, `component.md` skeletons |
 | `#json-output-schemas` | Phase output and validation issue schemas |
 | `#source-file-links` | Rule 1 in full, with a worked relative-path example |
 | `#navigation-link-patterns` | Parent links and drill-down table format |

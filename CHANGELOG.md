@@ -6,6 +6,69 @@ Changelog](https://keepachangelog.com/). Releases before 3.6.0 are
 documented in [GitHub
 Releases](https://github.com/kokko-ng/kokko-skills/releases) only.
 
+## 8.0.0 - 2026-11-26
+
+Major: kokko-viz diagrams now follow the C4 model's labelling semantics
+strictly, on a new spec schema. The renderer refuses schema 1 specs, so an
+existing codemap has to be upgraded once: run `/c4-verify`, which rewrites
+each spec from the code and adds the Container diagram the codemap was
+missing. Only kokko-viz changed; the other plugins bump in lock-step.
+
+### Changed
+
+- **Spec schema 2.** Every element states its C4 `type` (Person, Software
+  System, Container, Component), its `technology` (required on containers
+  and components, refused on people and software systems) and a
+  one-sentence `description`, drawn as name, `[Type: technology]`,
+  description. Every relationship is one way and carries a sentence-case
+  verb phrase ending on its preposition, plus a `technology` wherever a
+  container is involved (`[JSON/HTTPS]`); context diagrams and lines with a
+  person carry none. The node `kind`, `tag` and `sublabel` and the
+  14-character uppercase arrow labels are gone: treatments are derived from
+  what the element is, so they cannot disagree with the key.
+- **Titles are derived** as `<Diagram type> diagram for <scope>` and drawn
+  inside the SVG, so the PNG carries them. Boundaries are typed
+  (`Recipe Planner [Software System]`) and nest, so a component diagram
+  shows its container inside its software system.
+- **The key is generated from what the diagram uses** and never truncated:
+  every treatment, boundary, line style, arrowhead, icon and acronym, the
+  label convention and a note that box size carries no meaning. Acronyms
+  outside a built-in list must be expanded in the spec. It replaces the
+  legend.
+- **Scope rules per level** (one system in scope on a context diagram, one
+  system boundary holding exactly the containers, a container boundary
+  inside its system boundary) and the C4 container rules: a shared library,
+  package, SDK or message bus is refused as a container.
+- The codemap gains the Container diagram it was missing
+  (`<system>/containers.c4.json` and `containers.md`); `container.c4.json`
+  is the component diagram of that container. The `--eli5` companion embeds
+  the Container diagram above its list of parts.
+- `/c4-map`, `/c4-update`, `/c4-verify` and both agents author and verify
+  against the new rules; verification reports every violation by lint rule
+  id.
+- A node's text is centred in the box as drawn (its row's height), as it
+  was for the old two-line layout.
+
+### Added
+
+- `rules.py`: the C4 model and the 36-rule lint table (T, K, N, L, S, X),
+  shared by the renderer and the new `lint.py`, which re-checks rendered
+  SVGs (hand edits and stale output included) and prints findings by rule
+  id, as text or `--json`. Cross-diagram rules check that an element and a
+  relationship read the same on every diagram of a system. A figure marked
+  `data-c4-diagram="none"` (a non-C4 supplementary view) is reported as
+  skipped.
+- `assets/insight-c4/examples/`: a valid context, container and component
+  spec for one synthetic system.
+- `references/insight-diagrams.md` sections on C4 semantics, diagram types
+  and files, upgrading a schema 1 spec, and the lint rules.
+
+### Fixed
+
+- A boundary label could be struck through by a connector.
+- A label running off the canvas, or a boundary drawn round a node that is
+  not its member, now fails the layout check instead of passing.
+
 ## 7.0.1 - 2026-11-26
 
 Fixes from the first runs of the new skills against real repos and a real

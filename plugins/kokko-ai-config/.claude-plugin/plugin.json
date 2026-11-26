@@ -1,6 +1,6 @@
 {
   "name": "kokko-ai-config",
-  "version": "7.0.1",
+  "version": "8.0.0",
   "description": "AI configuration upkeep: verify CLAUDE.md and README files against the codebase, and carry a session's corrections upstream into the skill or plugin that caused them.",
   "author": {
     "name": "kokko-ng"

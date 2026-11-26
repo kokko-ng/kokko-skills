@@ -4,9 +4,10 @@ Shared document templates and patterns for the `/kokko-viz:c4-map`,
 `/kokko-viz:c4-update`, and `/kokko-viz:c4-verify` skills. This is a
 reference file, not a skill to invoke.
 
-Diagrams are covered by its sibling, `insight-diagrams.md`: the Insight
-design grammar, the `.c4.json` spec schema and the renderer. This file covers
-the folders, the markdown and the phase JSON.
+Diagrams are covered by its sibling, `insight-diagrams.md`: the C4 semantics
+(element types, labels, titles, the key), the `.c4.json` spec schema, the
+renderer and the lint rules. This file covers the folders, the markdown and
+the phase JSON.
 
 ---
 
@@ -15,65 +16,104 @@ the folders, the markdown and the phase JSON.
 ```text
 codemap/
 ├── README.md
-├── .insight-c4/                 # vendored renderer (not browsed)
+├── .insight-c4/                 # vendored renderer and linter (not browsed)
 └── <system-id>/
-    ├── context.c4.json          # the model — the source of record
+    ├── context.c4.json          # System Context diagram: the source of record
     ├── context.html             # Insight page   ┐
     ├── context.svg              # standalone SVG ├ generated, never hand-edited
     ├── context.png              # raster @2x     ┘
     ├── context.md
+    ├── containers.c4.json       # Container diagram for the system
+    ├── containers.{html,svg,png}
+    ├── containers.md
     ├── eli5.md                  # optional plain-language companion (#eli5-companion)
     └── containers/
         └── <container-id>/
-            ├── container.c4.json
+            ├── container.c4.json        # Component diagram for this container
             ├── container.{html,svg,png}
             ├── container.md
             └── components/
                 └── <component-id>/
-                    ├── component.c4.json
+                    ├── component.c4.json  # Component diagram focused on one component
                     ├── component.{html,svg,png}
                     └── component.md
 ```
 
+Which C4 diagram each spec is, and its scope rules:
+`insight-diagrams.md#diagram-types-and-files`. A shared library, package or
+SDK gets no folder: it is not a container, and its code is described on the
+components that use it.
+
 A `.puml` file here, or a `codemap/.c4-plantuml/` library, is a leftover;
-convert it per `#migrating-a-plantuml-codemap`.
+convert it per `#migrating-a-plantuml-codemap`. A `.c4.json` without
+`"schema": 2` is a schema 1 spec; upgrade it per
+`insight-diagrams.md#upgrading-a-schema-1-spec`.
 
 ---
 
 ## Markdown Templates
 
+Each document's H1 names what it documents; the image alt text is the
+diagram's title.
+
 ### context.md
 
 ```markdown
-# System Context: [System Name]
+# System Context diagram for [System Name]
 
 <!-- Last updated: YYYY-MM-DD -->
 
-[System description]
+[System description: what it does and for whom]
 
 ## Diagram
 
-[![System Context](./context.png)](./context.html)
+[![System Context diagram for [System Name]](./context.png)](./context.html)
 
 Drawn in the Insight design system from [`context.c4.json`](./context.c4.json).
 
-## Actors
+## People
 
-| Actor | Description |
-|-------|-------------|
+| Person | Description |
+|--------|-------------|
 | [Name] | [Description] |
 
-## External Systems
+## External Software Systems
 
-| System | Type | Description |
-|--------|------|-------------|
-| [Name] | [Type] | [Description] |
+| System | Description | How the system uses it |
+|--------|-------------|------------------------|
+| [Name] | [Description] | [Relationship label] |
 
-## Drill Down - Containers
+## Drill Down
 
-| Container | Technology | Description | Details |
-|-----------|------------|-------------|---------|
-| [Name] | [Tech] | [Desc] | [View](./containers/<id>/container.md) |
+[Container diagram for [System Name]](./containers.md)
+```
+
+### containers.md
+
+```markdown
+# Container diagram for [System Name]
+
+<!-- Last updated: YYYY-MM-DD -->
+
+**Parent:** [System Context](./context.md)
+
+## Diagram
+
+[![Container diagram for [System Name]](./containers.png)](./containers.html)
+
+Drawn in the Insight design system from [`containers.c4.json`](./containers.c4.json).
+
+## Containers
+
+| Container | Kind | Technology | Description | Details |
+|-----------|------|------------|-------------|---------|
+| [Name] | Application / Data store | [Technology] | [Description] | [View](./containers/<id>/container.md) |
+
+## Relationships
+
+| From | To | Description | Technology |
+|------|----|-------------|------------|
+| [Source] | [Target] | [Verb phrase] | [Protocol] |
 ```
 
 ### container.md
@@ -83,13 +123,14 @@ Drawn in the Insight design system from [`context.c4.json`](./context.c4.json).
 
 <!-- Last updated: YYYY-MM-DD -->
 
-**Parent:** [System Context](../../context.md)
+**Parent:** [Container diagram](../../containers.md)
+**System:** [System Context](../../context.md)
 
-[Container description]
+[Container description] `[Container: Technology]`
 
 ## Diagram
 
-[![Container](./container.png)](./container.html)
+[![Component diagram for [System Name] - [Container Name]](./container.png)](./container.html)
 
 Drawn in the Insight design system from [`container.c4.json`](./container.c4.json).
 
@@ -102,14 +143,14 @@ Drawn in the Insight design system from [`container.c4.json`](./container.c4.jso
 
 ## Dependencies
 
-- External: [List external systems]
-- Containers: [List container dependencies]
+- External systems: [List]
+- Containers: [List, with the protocol of each]
 
 ## Drill Down - Components
 
-| Component | Responsibility | Details |
-|-----------|----------------|---------|
-| [Name] | [Desc] | [View](./components/<id>/component.md) |
+| Component | Technology | Responsibility | Details |
+|-----------|------------|----------------|---------|
+| [Name] | [Technology] | [Desc] | [View](./components/<id>/component.md) |
 ```
 
 ### component.md
@@ -122,13 +163,14 @@ Drawn in the Insight design system from [`container.c4.json`](./container.c4.jso
 **Parent:** [Container Name](../../container.md)
 **System:** [System Context](../../../../context.md)
 
-[Component description]
+[Component description] `[Component: Technology]`
 
 ## Diagram
 
-[![Component](./component.png)](./component.html)
+[![Component diagram for [System Name] - [Container Name]](./component.png)](./component.html)
 
 Drawn in the Insight design system from [`component.c4.json`](./component.c4.json).
+Focus: [Component Name] and its direct relationships.
 
 ## Responsibility
 
@@ -136,31 +178,39 @@ Drawn in the Insight design system from [`component.c4.json`](./component.c4.jso
 
 ## Dependencies
 
-- Internal: [Same container dependencies]
-- Cross-Container: [Other container dependencies]
+- Internal: [Same-container components]
+- Cross-Container: [Other containers, with the protocol of each]
 ```
 
 ---
 
 ## Diagrams
 
-The visual contract lives in `insight-diagrams.md`. The two things every
-phase needs from it:
+The visual and semantic contract lives in `insight-diagrams.md`. The things
+every phase needs from it:
 
-- **Which treatment a C4 element takes** — `insight-diagrams.md#c4-to-insight`.
-  `Person` is `input`, `System_Ext` is `external` and carries its official
-  Azure or Fabric icon, `ContainerDb` is `store`, a `Component` is `backend`
-  and carries no icon, a boundary is a zone, and one node per diagram is
-  `focal` (two at the very most).
-- **The spec schema** — `insight-diagrams.md#spec-schema`. A phase that
-  produces a diagram produces a `<level>.c4.json`, not SVG and not PlantUML.
+- **C4 meaning** (`insight-diagrams.md#c4-semantics`): a container is an
+  application or data store that runs; a shared library, package, SDK or
+  message bus is not one; owned hosted data stores are containers; anything
+  the team does not own is external.
+- **Labels**: every element has a name, a `type`, a `technology`
+  (containers and components only) and a one-sentence `description`; every
+  relationship has a verb-phrase `label` ending on its preposition and, with
+  a container or across a container boundary, a `technology`.
+- **The spec schema** (`insight-diagrams.md#spec-schema`). A phase that
+  produces a diagram produces a schema 2 `<level>.c4.json`, not SVG and not
+  PlantUML. The title, the treatments and the key are derived; there is
+  nothing to choose.
 
-Budget per diagram: 16 nodes, 24 edges, 2 accent elements, 3 zones, arrow
-labels of 14 uppercase characters or fewer. Over 16 nodes, split the level.
+Budget per diagram: 16 nodes, 24 edges, one focus, 3 boundaries. Over 16
+nodes, split the level.
 
 ---
 
 ## JSON Output Schemas
+
+Every element in a phase output carries the fields its spec needs, so the
+file phase writes specs without guessing.
 
 ### Context Phase Output
 
@@ -168,15 +218,21 @@ labels of 14 uppercase characters or fewer. Over 16 nodes, split the level.
 {
   "SYSTEM_ID": "kebab-case-id",
   "SYSTEM_NAME": "Human Readable Name",
-  "SYSTEM_DESCRIPTION": "Description",
+  "SYSTEM_DESCRIPTION": "One sentence, ending in a full stop.",
   "EXTERNAL_SYSTEMS": [
-    {"id": "string", "name": "string", "type": "string", "evidence": "file:line"}
+    {"id": "string", "name": "string", "description": "One sentence.",
+     "relationship": "Verb phrase ending on its preposition", "evidence": "file:line"}
   ],
-  "ACTORS": [
-    {"id": "string", "name": "string", "description": "string"}
+  "PEOPLE": [
+    {"id": "string", "name": "string", "description": "One sentence.",
+     "relationship": "Verb phrase ending on its preposition"}
   ],
   "PRELIMINARY_CONTAINERS": [
-    {"id": "string", "name": "string", "type": "Application|Database|Queue"}
+    {"id": "string", "name": "string", "kind": "application|data store|queue",
+     "evidence": "file:line"}
+  ],
+  "NOT_CONTAINERS": [
+    {"name": "string", "why": "shared library|package|message bus|...", "used_by": ["container-id"]}
   ]
 }
 ```
@@ -190,8 +246,9 @@ labels of 14 uppercase characters or fewer. Over 16 nodes, split the level.
     {
       "id": "string",
       "name": "string",
-      "technology": "string",
-      "description": "string",
+      "technology": "Language and framework, or the store and what it is",
+      "store": false,
+      "description": "One sentence, ending in a full stop.",
       "source_path": "path/",
       "external_deps": ["external-id"],
       "container_deps": ["container-id"],
@@ -201,7 +258,8 @@ labels of 14 uppercase characters or fewer. Over 16 nodes, split the level.
     }
   ],
   "CONTAINER_RELATIONSHIPS": [
-    {"from": "id", "to": "id", "protocol": "SQL|HTTP|gRPC", "description": "string"}
+    {"from": "id", "to": "id", "label": "Verb phrase ending on its preposition",
+     "technology": "JSON/HTTPS", "evidence": "file:line"}
   ]
 }
 ```
@@ -217,10 +275,11 @@ labels of 14 uppercase characters or fewer. Over 16 nodes, split the level.
         "id": "string",
         "name": "string",
         "parent_container": "container-id",
+        "technology": "Framework construct, e.g. FastAPI router",
+        "description": "One sentence, ending in a full stop.",
         "source_path": "path/",
-        "responsibility": "string",
-        "internal_deps": ["component-id"],
-        "cross_container_deps": []
+        "internal_deps": [{"to": "component-id", "label": "Verb phrase ending on its preposition"}],
+        "cross_container_deps": [{"to": "container-or-system-id", "label": "Verb phrase", "technology": "SQL/TLS"}]
       }
     ]
   }
@@ -233,12 +292,17 @@ labels of 14 uppercase characters or fewer. Over 16 nodes, split the level.
 {
   "id": "ISSUE-001",
   "severity": "error|warning|info",
-  "category": "completeness|accuracy|hierarchy|diagram|image_pairing",
+  "category": "completeness|accuracy|hierarchy|diagram|c4_rules|image_pairing",
+  "rule": "N3",
   "description": "string",
   "location": "file/path",
   "fix": "How to resolve"
 }
 ```
+
+`rule` is the lint rule id from `insight-diagrams.md#lint-rules` for a
+`c4_rules` issue (`spec` or `layout` for a renderer finding without one),
+and is omitted otherwise.
 
 ### Change Detection Schema
 
@@ -260,9 +324,9 @@ labels of 14 uppercase characters or fewer. Over 16 nodes, split the level.
 ## Source File Links
 
 Every source file, module, or code element mentioned in a generated `.md`
-document must be a markdown hyperlink to the actual file it refers to — never
-bare text like `market_research_agent/db.py`. Use repo-relative paths from the
-document's own location, so the links resolve when browsing the repo on
+document must be a markdown hyperlink to the actual file it refers to, never
+bare text like `market_research_agent/db.py`. Use repo-relative paths from
+the document's own location, so the links resolve when browsing the repo on
 GitHub:
 
 ```markdown
@@ -275,15 +339,16 @@ GitHub:
 Compute the relative prefix from the document's depth. Verify every link
 target exists on disk before writing it. To point at a specific line, use an
 absolute GitHub blob URL derived from `git remote get-url origin` and the
-default branch (`https://github.com/<owner>/<repo>/blob/<branch>/<path>#L<n>`)
-— only for line anchors; plain file references stay repo-relative.
+default branch (`https://github.com/<owner>/<repo>/blob/<branch>/<path>#L<n>`),
+only for line anchors; plain file references stay repo-relative.
 
 ## Navigation Link Patterns
 
-| From Level | Parent Link | Example |
-| ---------- | ----------- | ------- |
-| Container | `../../context.md` | Go to system context |
-| Component | `../../container.md` | Go to parent container |
+| From | Parent Link | Example |
+| ---- | ----------- | ------- |
+| `containers.md` | `./context.md` | Go to system context |
+| `container.md` | `../../containers.md` | Go to the container diagram |
+| `component.md` | `../../container.md` | Go to parent container |
 
 ### Drill-Down Table Format
 
@@ -297,13 +362,14 @@ default branch (`https://github.com/<owner>/<repo>/blob/<branch>/<path>#L<n>`)
 
 ## Rendering
 
-The renderer is vendored into the model at `codemap/.insight-c4/`, so the
-repo regenerates its own diagrams with no plugin installed:
+The renderer and linter are vendored into the model at `codemap/.insight-c4/`,
+so the repo regenerates and checks its own diagrams with no plugin installed:
 
 ```bash
 python3 codemap/.insight-c4/render.py 'codemap/**/*.c4.json' --png   # whole model
 python3 codemap/.insight-c4/render.py codemap/<system>/context.c4.json --png
 python3 codemap/.insight-c4/render.py 'codemap/**/*.c4.json' --check # checks only
+python3 codemap/.insight-c4/lint.py 'codemap/**/*.svg'               # re-check the output
 ```
 
 Refresh the vendored copy from the plugin whenever the plugin updates:
@@ -315,11 +381,12 @@ cp "${CLAUDE_PLUGIN_ROOT}/skills/c4/assets/insight-c4/"*.py codemap/.insight-c4/
 The plugin copy is upstream. Fix the renderer there, never in the vendored
 copy.
 
-`--check` exits non-zero when a spec is malformed or over a hard limit
-(three zones, 14-character labels; see `insight-diagrams.md#running-it`),
-when a connector runs behind a node it does not terminate on, or when a
-label mask lands on a node; everything else it finds prints as a warning.
-Run it before every commit that touches a spec.
+`--check` exits non-zero when a spec breaks a C4 rule or is malformed, when
+the layout would mislead (a connector behind a node, a label on a node or off
+the canvas, a boundary round a non-member), or when two diagrams of one
+system disagree; see `insight-diagrams.md#running-it`. `lint.py` exits
+non-zero when a rendered SVG breaks a rule, which catches hand edits and
+stale output. Run both before every commit that touches a spec.
 
 PNG needs a rasteriser. The renderer tries Playwright from the repo's own
 `node_modules` first (true Inter), then `rsvg-convert`, then `magick` (both
@@ -335,14 +402,16 @@ makes everything look stale.
 An older model has `.puml` files and a `codemap/.c4-plantuml/` library.
 Convert it:
 
-1. Read each `.puml` and translate it to a `<level>.c4.json` — the macros map
-   one to one onto node kinds (`insight-diagrams.md#c4-to-insight`), and the
-   `Rel()` calls onto edges. The title becomes `title`; `SHOW_LEGEND()` has no
-   equivalent, the renderer always emits a legend.
+1. Read each `.puml` and translate it to a schema 2 `<level>.c4.json`. The
+   macros carry the C4 type (`Person`, `System`, `System_Ext`, `Container`,
+   `ContainerDb`, `Component`) and their arguments the name, technology and
+   description; `Rel()` calls become edges, rewritten as verb phrases with
+   the protocol in `technology`. The title is derived; `SHOW_LEGEND()` has no
+   equivalent, because the renderer always emits the key.
 2. Assign rows. This is the one judgment call: PlantUML had no layout, so the
    row order is new information. `insight-diagrams.md#row-design` gives the
    convention per level.
-3. Render, check, then `rm` the `.puml` and the `codemap/.c4-plantuml/`
+3. Render, check and lint, then `rm` the `.puml` and the `codemap/.c4-plantuml/`
    directory.
 4. Update every `.md` diagram section and `codemap/README.md`.
 
@@ -373,6 +442,8 @@ disagrees with the model is worse than none.
 
 ## The parts
 
+![Containers](./containers.png)
+
 | Part | What it does |
 |------|--------------|
 | [[Container name]](./containers/<container-id>/container.md) | [One sentence, in everyday words] |
@@ -401,7 +472,8 @@ Rules:
 - **Only what the model says.** Every part, flow, and dependency comes from
   the specs and documents at the three levels. The companion adds no fact of
   its own and names no part the model does not have.
-- **Every container appears** in "The parts", linked to its `container.md`.
+- **Every container appears** in "The parts", linked to its `container.md`,
+  under the system's Container diagram (`containers.png`).
   One to three flows, the ones a newcomer would ask about first.
 - **Plain words.** Short sentences. An analogy only where it makes a part
   clearer, never as decoration. No code identifiers, file names, or class
@@ -469,7 +541,7 @@ export replaces.
 
 ### Validation Failure Response
 
-- List all error-severity issues first
+- List all error-severity issues first, each C4 rule finding with its id
 - Proceed when only warnings remain; on any error, stop before writing
   files and report the errors in the summary
-- Flag items requiring manual review
+- Flag items requiring manual review, including every `review` finding

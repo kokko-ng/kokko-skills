@@ -32,7 +32,17 @@ Read the relevant section yourself whenever a step cites a
 Diagrams are Insight-branded and generated from `<level>.c4.json` specs by
 the renderer. Edit the spec, never the `.html`, `.svg` or `.png`. If the
 model still holds `.puml` files, this run converts them — see
-`c4-templates.md#migrating-a-plantuml-codemap` — and deletes them.
+`c4-templates.md#migrating-a-plantuml-codemap` — and deletes them. A spec
+without `"schema": 2` no longer renders: every spec this run touches is
+upgraded per `insight-diagrams.md#upgrading-a-schema-1-spec`, and a model
+with no `containers.c4.json` gains one (`c4-templates.md#output-structure`).
+
+Every spec written or edited follows the C4 labelling semantics in
+`insight-diagrams.md#c4-semantics`: element `type`, `technology` and
+one-sentence `description`, verb-phrase relationship `label` with its
+`technology`, the boundaries the level's scope requires, and the same
+wording for an element or relationship on every diagram it appears on. A
+new dependency on a shared library is not a new container.
 
 This skill runs forked: phase output stays here and the caller receives the
 summary. Nobody can answer a question mid-run, so report and stop instead
@@ -62,7 +72,7 @@ Update order:
 ### Step 1A: Identify System
 
 The system to update is `$0`, unless `$0` starts with `--`: the flags
-`--eli5` and `--export <dir>` (rule 6 of the `c4` skill) may appear anywhere
+`--eli5` and `--export <dir>` (rule 7 of the `c4` skill) may appear anywhere
 in `$ARGUMENTS` and are not a system id. If a system id was given, use it as
 `SYSTEM_ID` and verify `codemap/<SYSTEM_ID>/` exists — report the error and
 stop if it does not. With no system id:
@@ -187,7 +197,10 @@ Parameters:
 
     OUTPUT: Full updated files (the .c4.json spec and the .md). Keep the
     existing row assignment unless the change makes it wrong; a stable row
-    order keeps the diff on the diagram readable.
+    order keeps the diff on the diagram readable. Every element and edge you
+    add or change carries its full C4 label (insight-diagrams.md#c4-semantics);
+    when you rename or relabel an element or relationship, list every other
+    spec it appears in so they are changed to match (rules X1, X3).
 ```
 
 ### Step 3C: Additions (Top-Down)
@@ -217,15 +230,19 @@ Parameters:
     UPDATED FILES: <list>
 
     CHECKS:
-    1. Container-Context: Folders match context.md table entries
+    1. Container-System: Folders match containers.md table entries
     2. Component-Container: Folders match container.md table entries
     3. Navigation: All links resolve to existing files
     4. IDs: No duplicates, valid folder names
+    5. C4 rules: run
+       python3 codemap/.insight-c4/render.py 'codemap/<SYSTEM_ID>/**/*.c4.json' --check
+       and record every finding with its rule id (N3, L5, X1, ...)
 
     OUTPUT:
     {
       "CONSISTENCY_PASSED": true/false,
       "ISSUES": [...],
+      "C4_VIOLATIONS": [{"file": "...", "rule": "N3", "severity": "error|review", "message": "..."}],
       "FIXES_REQUIRED": [{"file": "...", "action": "...", "details": "..."}]
     }
 ```
@@ -243,10 +260,14 @@ Parameters:
    ```bash
    python3 codemap/.insight-c4/render.py <each modified .c4.json> --png
    python3 codemap/.insight-c4/render.py 'codemap/**/*.c4.json' --check
+   python3 codemap/.insight-c4/lint.py 'codemap/**/*.svg'
    ```
 
-   Every spec must report `ok`. A `FAIL` is fixed in the spec, usually by
-   reordering rows, never by editing the rendered output.
+   Every spec and every SVG must report `ok`. A `FAIL (C4 rules)` or a lint
+   finding is fixed in the spec from the code, by the rule it names; a
+   `FAIL (layout)` by reordering rows; never by editing the rendered output.
+   The `--check` run covers the whole model so the cross-diagram rules
+   (X1-X3) see every diagram.
 
 4. **Update README:** Update `codemap/README.md` with timestamp and change
    summary.
@@ -290,6 +311,8 @@ Parameters:
 - Export: `<dir>/<system-id>/` / not requested
 
 ## Verification: PASSED/FAILED
+- C4 rules: all ok / violations by rule id and file
+- Review findings: [rule id and file each]
 ```
 
 On subagent failure, report which update failed and skip dependent updates.

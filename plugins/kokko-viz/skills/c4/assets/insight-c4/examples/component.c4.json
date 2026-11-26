@@ -1,0 +1,73 @@
+{
+  "schema": 2,
+  "level": "component",
+  "subtitle": "The components inside the Planner API",
+  "desc": "Inside the Planner API, routes call a meal planner, which loads recipes through a repository and asks Azure OpenAI for ideas through a suggestion client.",
+  "rows": [
+    ["spa"],
+    ["routes"],
+    ["planner", "suggest"],
+    ["repo"],
+    ["db"],
+    ["aoai"]
+  ],
+  "nodes": {
+    "spa": {
+      "name": "Planner UI",
+      "type": "Container",
+      "technology": "TypeScript, Vue 3",
+      "description": "Lets the cook browse recipes and plan the week in a browser."
+    },
+    "routes": {
+      "name": "Recipe Routes",
+      "type": "Component",
+      "technology": "FastAPI router",
+      "description": "Handles requests for recipes, plans and shopping lists."
+    },
+    "planner": {
+      "name": "Meal Planner",
+      "type": "Component",
+      "technology": "Python class",
+      "focus": true,
+      "description": "Builds weekly plans and shopping lists from recipes."
+    },
+    "suggest": {
+      "name": "Suggestion Client",
+      "type": "Component",
+      "technology": "openai Python client",
+      "description": "Asks Azure OpenAI for recipes that use given ingredients."
+    },
+    "repo": {
+      "name": "Recipe Repository",
+      "type": "Component",
+      "technology": "SQLAlchemy 2",
+      "description": "Reads and writes recipes and plans in the database."
+    },
+    "db": {
+      "name": "Recipe Database",
+      "type": "Container",
+      "technology": "PostgreSQL 16 database schema",
+      "store": true,
+      "description": "Stores recipes, meal plans and shopping lists."
+    },
+    "aoai": {
+      "name": "Azure OpenAI",
+      "type": "Software System",
+      "external": true,
+      "icon": "azure-openai",
+      "description": "Suggests recipes from a list of ingredients."
+    }
+  },
+  "boundaries": [
+    { "name": "Recipe Planner", "type": "Software System", "members": ["spa", "routes", "planner", "suggest", "repo", "db"] },
+    { "name": "Planner API", "type": "Container", "members": ["routes", "planner", "suggest", "repo"] }
+  ],
+  "edges": [
+    { "from": "spa", "to": "routes", "label": "Makes API requests to", "technology": "JSON/HTTPS" },
+    { "from": "routes", "to": "planner", "label": "Builds meal plans using" },
+    { "from": "planner", "to": "suggest", "label": "Asks for recipe ideas using" },
+    { "from": "planner", "to": "repo", "label": "Loads and saves recipes using" },
+    { "from": "repo", "to": "db", "label": "Reads from and writes to", "technology": "SQL/TLS" },
+    { "from": "suggest", "to": "aoai", "label": "Requests recipe suggestions from", "technology": "JSON/HTTPS", "kind": "link" }
+  ]
+}

@@ -1,0 +1,41 @@
+{
+  "schema": 2,
+  "level": "context",
+  "subtitle": "Who plans meals with the Recipe Planner and what it depends on",
+  "desc": "A home cook plans meals with the Recipe Planner, which sends shopping lists by e-mail and asks Azure OpenAI for recipe ideas.",
+  "rows": [
+    ["cook"],
+    ["planner"],
+    ["email", "aoai"]
+  ],
+  "nodes": {
+    "cook": {
+      "name": "Home Cook",
+      "type": "Person",
+      "description": "Plans weekly meals and shops for them."
+    },
+    "planner": {
+      "name": "Recipe Planner",
+      "type": "Software System",
+      "description": "Plans meals from saved recipes and builds shopping lists."
+    },
+    "email": {
+      "name": "E-mail Service",
+      "type": "Software System",
+      "external": true,
+      "description": "Delivers shopping lists to the cook by e-mail."
+    },
+    "aoai": {
+      "name": "Azure OpenAI",
+      "type": "Software System",
+      "external": true,
+      "icon": "azure-openai",
+      "description": "Suggests recipes from a list of ingredients."
+    }
+  },
+  "edges": [
+    { "from": "cook", "to": "planner", "label": "Plans meals and shopping using" },
+    { "from": "planner", "to": "email", "label": "Sends shopping lists using", "kind": "link" },
+    { "from": "planner", "to": "aoai", "label": "Requests recipe suggestions from", "kind": "link" }
+  ]
+}
