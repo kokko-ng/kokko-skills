@@ -233,14 +233,16 @@ class Layout:
 
     def _place_x(self) -> None:
         content_w = max([self._row_width(r) for r in range(len(self.rows))] + [0])
-        lane_w = (self._lanes["left"] + self._lanes["right"]) * CHANNEL_STEP
-        if lane_w:
-            lane_w += 2 * CHANNEL_INSET
         # a nested boundary pads 16px further out per level it encloses
         extra = 16 * max([z.nest for z in self.zones] + [0])
-        self.width = max(self.min_width, snap(content_w + 2 * (MARGIN + extra) + lane_w))
-        left_pad = self._lanes["left"] * CHANNEL_STEP + (CHANNEL_INSET if self._lanes["left"] else 0)
-        right_pad = self._lanes["right"] * CHANNEL_STEP + (CHANNEL_INSET if self._lanes["right"] else 0)
+        # A boundary is drawn its pad (and 4px of snapping) outside its members,
+        # so a side that carries lanes keeps that much more clear: without it
+        # the innermost lane of a diagram that fills its canvas runs inside the
+        # boundary's edge.
+        clear = max([self.zone_pad(z) + 4 for z in self.zones] + [extra]) - extra
+        left_pad = self._lanes["left"] * CHANNEL_STEP + (CHANNEL_INSET + clear if self._lanes["left"] else 0)
+        right_pad = self._lanes["right"] * CHANNEL_STEP + (CHANNEL_INSET + clear if self._lanes["right"] else 0)
+        self.width = max(self.min_width, snap(content_w + 2 * (MARGIN + extra) + left_pad + right_pad))
         band_l = MARGIN + extra + left_pad
         band_r = self.width - MARGIN - extra - right_pad
         for r in range(len(self.rows)):
@@ -268,7 +270,6 @@ class Layout:
         return abs(ids.index(a.id) - ids.index(b.id)) == 1
 
     def _classify_edges(self) -> None:
-        n_rows = len(self.rows)
         for i, e in enumerate(self.edges):
             a, b = self.nodes[e.src], self.nodes[e.dst]
             dr = b.row - a.row
@@ -326,9 +327,7 @@ class Layout:
         e = self.edges[i]
         a, b = self.nodes[e.src], self.nodes[e.dst]
         if e.shape == "lane":
-            side, k = self._lane_of[i]
-            lx = MARGIN + CHANNEL_INSET + k * CHANNEL_STEP if side == "left" else \
-                self.width - MARGIN - CHANNEL_INSET - k * CHANNEL_STEP
+            lx = self._lane_x(i)
             return (min(a.cx, b.cx, lx), max(a.cx, b.cx, lx))
         return (a.cx, b.cx)
 
@@ -388,21 +387,28 @@ class Layout:
         lane_edges = [i for i, e in enumerate(self.edges) if e.shape == "lane"]
         if not lane_edges:
             return
-        mid = self._provisional_centre()
         left, right = [], []
         for i in lane_edges:
             e = self.edges[i]
-            cx = (self.nodes[e.src].cx + self.nodes[e.dst].cx) / 2
-            (left if cx <= mid else right).append(i)
+            lean = self._offset(self.nodes[e.src]) + self._offset(self.nodes[e.dst])
+            (left if lean <= 0 else right).append(i)
         for side, group in (("left", left), ("right", right)):
             group.sort(key=lambda i: -abs(self.nodes[self.edges[i].src].row - self.nodes[self.edges[i].dst].row))
             for k, i in enumerate(group):
                 self._lane_of[i] = (side, k)
             self._lanes[side] = len(group)
 
-    def _provisional_centre(self) -> float:
-        widest = max(range(len(self.rows)), key=self._row_width)
-        return self._row_width(widest) / 2
+    def _offset(self, node: Node) -> float:
+        """A node's centre relative to the axis every row is centred on.
+
+        Lanes are chosen before x is placed (the canvas width depends on how
+        many lanes each side holds), so node.x is still zero here. Rows are all
+        centred on one axis, though, so where a node sits relative to that axis
+        is already known from the widths in its row.
+        """
+        ids = self.rows[node.row]
+        before = sum(self.nodes[i].width + NODE_GAP for i in ids[: ids.index(node.id)])
+        return before + node.width / 2 - self._row_width(node.row) / 2
 
     # -- ports -------------------------------------------------------------
 
@@ -486,11 +492,35 @@ class Layout:
     def _channel_y(self, g: int, i: int) -> float:
         return self.gutter_y[g] + self.inset + self._channel_of[(g, i)] * CHANNEL_STEP
 
+    def _content_edge(self, side: str) -> float:
+        """The outermost x of any node or boundary on one side: what a lane must clear."""
+        placed = [self.nodes[nid] for ids in self.rows for nid in ids]
+        xs = [float(n.x if side == "left" else n.right) for n in placed]
+        for z in self.zones:
+            members = [self.nodes[m] for m in z.members if m in self.nodes]
+            if members:
+                # the same arithmetic as _place_zones, which runs after routing
+                pad = self.zone_pad(z)
+                zx = snap(min(m.x for m in members) - pad) - 4
+                xs.append(zx if side == "left" else zx + snap(max(m.right for m in members) + pad - zx))
+        return min(xs) if side == "left" else max(xs)
+
     def _lane_x(self, i: int) -> float:
+        """Where edge ``i``'s lane runs: beside the content, not at the canvas edge.
+
+        A canvas is often wider than its content (a preset's minimum width), and
+        a lane at the margin then carries its line far out and back. Lanes sit
+        one inset outside the outermost node or boundary instead, the longest
+        span outermost. The margin position is the limit, so a diagram that
+        fills its canvas routes exactly as it did.
+        """
         side, k = self._lane_of[i]
+        inward = (self._lanes[side] - 1 - k) * CHANNEL_STEP
         if side == "left":
-            return MARGIN + CHANNEL_INSET + k * CHANNEL_STEP
-        return self.width - MARGIN - CHANNEL_INSET - k * CHANNEL_STEP
+            at_margin = MARGIN + CHANNEL_INSET + k * CHANNEL_STEP
+            return max(at_margin, snap(self._content_edge("left") - CHANNEL_INSET - inward))
+        at_margin = self.width - MARGIN - CHANNEL_INSET - k * CHANNEL_STEP
+        return min(at_margin, snap(self._content_edge("right") + CHANNEL_INSET + inward))
 
     def _route(self) -> None:
         for i, e in enumerate(self.edges):
