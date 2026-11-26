@@ -77,6 +77,10 @@ jobs:
             plugin_root=$(dirname "$(dirname "$hooks_json")")
             while IFS= read -r cmd; do
               resolved=${cmd//"\${CLAUDE_PLUGIN_ROOT}"/$plugin_root}
+              # Commands quote the path so a plugin root with a space survives
+              # word splitting; drop the quotes before testing the file.
+              resolved=${resolved#\"}
+              resolved=${resolved%\"}
               if [ ! -f "$resolved" ]; then
                 echo "ERROR: $hooks_json -> '$cmd' does not resolve to a file ($resolved)"
                 status=1
