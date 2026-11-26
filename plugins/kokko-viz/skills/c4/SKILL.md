@@ -80,6 +80,22 @@ second supported format. `/c4-verify` converts one and deletes it. Do not
 add a `.puml`, do not vendor `C4-PlantUML`, and do not reach for `plantuml`
 when the renderer is missing a feature — extend the renderer or the spec.
 
+### 6. Two optional outputs: a plain-language companion and an export
+
+Both are asked for with a flag on `/c4-map`, `/c4-update` or `/c4-verify`,
+or by a request that says as much ("an ELI5 version", "put the codemap in
+my vault").
+
+- `--eli5` writes `codemap/<system-id>/eli5.md`, a walkthrough for a reader
+  who is not an engineer. It is derived from the model and says nothing the
+  model does not. Once it exists it is part of the model: every later run
+  keeps it in step, with or without the flag. Template and rules:
+  `references/c4-templates.md#eli5-companion`.
+- `--export <dir>` copies the finished documents and images to
+  `<dir>/<system-id>/` for reading outside the repo, with source-file links
+  rewritten to absolute URLs. The repo stays the source of record. Steps:
+  `references/c4-templates.md#export`.
+
 ## Templates and schemas
 
 Two reference files hold the shared material. Read the section an instruction
@@ -106,6 +122,8 @@ cites rather than the whole file.
 | `#source-file-links` | Rule 1 in full, with a worked relative-path example |
 | `#navigation-link-patterns` | Parent links and drill-down table format |
 | `#rendering` | Renderer invocation, staleness, and the PlantUML migration |
+| `#eli5-companion` | The optional plain-language `eli5.md`: skeleton and rules |
+| `#export` | Copying a finished model out of the repo with `--export` |
 | `#error-handling` | Phase and validation failure responses |
 
 The files live next to this skill at `${CLAUDE_SKILL_DIR}/references/`; the

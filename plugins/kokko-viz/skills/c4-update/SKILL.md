@@ -1,7 +1,7 @@
 ---
 name: c4-update
-description: Update an existing C4 model to match current code changes.
-argument-hint: '[system-id]'
+description: Update an existing C4 model to match current code changes. Use when the user asks to bring a codemap or its C4 diagrams up to date, optionally adding a plain-language version or copying the result to a notes vault.
+argument-hint: '[system-id] [--eli5] [--export <dir>]'
 allowed-tools: Agent, Bash, Read, Write, Glob, Grep
 context: fork
 background: false
@@ -61,9 +61,11 @@ Update order:
 
 ### Step 1A: Identify System
 
-The system to update is `$0`. If an argument was given, use it as
+The system to update is `$0`, unless `$0` starts with `--`: the flags
+`--eli5` and `--export <dir>` (rule 6 of the `c4` skill) may appear anywhere
+in `$ARGUMENTS` and are not a system id. If a system id was given, use it as
 `SYSTEM_ID` and verify `codemap/<SYSTEM_ID>/` exists — report the error and
-stop if it does not. With no argument:
+stop if it does not. With no system id:
 
 ```bash
 ls codemap/
@@ -254,6 +256,15 @@ Parameters:
    `c4-templates.md#source-file-links` (repo-relative, resolves on GitHub).
    Fix bare-text file references in the sections you touch.
 
+6. **Plain-language companion:** when `codemap/<SYSTEM_ID>/eli5.md` exists,
+   or `--eli5` was given, bring it in line with the updated model per
+   `c4-templates.md#eli5-companion`: parts added or removed, flows that
+   changed, the timestamp. A model that changed while its companion did not
+   is an inconsistency this run must not leave behind.
+
+7. **Export:** with `--export <dir>`, and only when verification passed,
+   copy the model to `<dir>/<SYSTEM_ID>/` per `c4-templates.md#export`.
+
 ---
 
 ## Output Summary
@@ -273,6 +284,10 @@ Parameters:
 
 ## Files Modified
 - Deletions / Modifications / Additions: [lists]
+
+## Optional Outputs
+- Plain-language companion: updated / created / none
+- Export: `<dir>/<system-id>/` / not requested
 
 ## Verification: PASSED/FAILED
 ```

@@ -1,7 +1,7 @@
 ---
 name: c4-map
 description: Generate a hierarchical C4 architecture map (context/containers/components) from a codebase.
-argument-hint: '[target-directory]'
+argument-hint: '[target-directory] [--eli5] [--export <dir>]'
 allowed-tools: Agent, Bash, Read, Write, Glob, Grep
 context: fork
 background: false
@@ -11,9 +11,13 @@ background: false
 
 Map the codebase architecture as a hierarchical C4 model
 (Context -> Containers -> Components). No existing model required.
-`$0`, when given, is the directory to map (default when empty: the current
-project root) — scope every search to it and state it in every phase prompt
-below.
+`$0`, when given and not a flag, is the directory to map (default when
+empty, or when the first argument starts with `--`: the current project
+root) — scope every search to it and state it in every phase prompt below.
+
+Two optional flags may appear anywhere in `$ARGUMENTS` (rule 6 of the `c4`
+skill): `--eli5` adds the plain-language companion, and `--export <dir>`
+copies the finished model to `<dir>/<system-id>/`.
 
 ## Orchestration
 
@@ -260,11 +264,24 @@ budget or a missing icon are reported to the user, not silently accepted.
 
 Create `codemap/README.md` with entry point to `<system-id>/context.md`.
 
-### Step 5: Confirm
+### Step 5: Plain-language companion (with `--eli5`)
+
+Write `codemap/<system-id>/eli5.md` from `FINAL_STRUCTURE` and the documents
+just written, per `c4-templates.md#eli5-companion`, and add the
+`[Plain-language version](./eli5.md)` line to `context.md`. It reuses the
+rendered `.png` files, so it comes after Step 3.
+
+### Step 6: Confirm
 
 ```bash
 find codemap -type f | sort
 ```
+
+### Step 7: Export (with `--export <dir>`)
+
+Only when every spec rendered `ok` and validation passed: copy the model to
+`<dir>/<system-id>/` per `c4-templates.md#export`. A failed run exports
+nothing.
 
 ---
 
@@ -289,6 +306,10 @@ find codemap -type f | sort
 
 ## Entry Point
 `codemap/<system-id>/context.md`
+
+## Optional Outputs
+- Plain-language companion: `codemap/<system-id>/eli5.md` / not requested
+- Export: `<dir>/<system-id>/` (N files) / not requested
 
 ## Validation
 - Status: PASSED/FAILED
