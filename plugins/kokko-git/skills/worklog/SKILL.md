@@ -41,6 +41,20 @@ by the same name under another address, use the name instead and say so.
 
 ### 2. Collect the history
 
+With more than one directory to read, first work out which repos they are.
+A linked worktree is a directory of its own but shares its repo's history,
+so reading it as a repo counts every commit twice and files the work under
+the worktree's folder name:
+
+```bash
+git -C <dir> rev-parse --path-format=absolute --git-common-dir
+git -C <dir> remote get-url origin
+```
+
+Directories that print the same common directory are one repo: read it
+once, from any of them. Name the project after its remote (the last path
+segment), not after the folder.
+
 In each repo:
 
 ```bash
