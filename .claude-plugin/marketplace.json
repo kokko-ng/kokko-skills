@@ -52,7 +52,7 @@
     {
       "name": "kokko-validation",
       "source": "./plugins/kokko-validation/",
-      "description": "Generic validation and deployment master-prompt templates plus a tailor skill that instantiates them for the current repo.",
+      "description": "Work through feedback with a verified ledger, and tailor an aesthetics master prompt to the current repo.",
       "version": "6.3.1",
       "author": {
         "name": "kokko-ng"

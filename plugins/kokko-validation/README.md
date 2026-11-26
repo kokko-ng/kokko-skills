@@ -1,20 +1,20 @@
 # kokko-validation
 
-Generic validation and deployment master-prompt templates plus a skill that
-instantiates them for the current repo. The templates cover local
-validation, deployed validation, Azure deployment, and aesthetics review;
-they carry `{{PLACEHOLDER}}` slots the skill fills in from the codebase.
+Two skills for the stretch between "it works" and "the client is happy with
+it".
 
-The validation and deploy templates validate `spec.md` user stories through
-deterministic, assertion-based test suites — API/integration tests,
-frontend component tests, and headless Playwright E2E specs
-(`@playwright/test`) — rather than agent-driven browser automation. The
-browser still gets exercised, but by committed specs with web-first
-assertions, not by the agent driving pages and reading screenshots: faster
-re-validation loops and far fewer tokens. The aesthetics template is the
-one place the agent itself drives a browser (Playwright CLI), since visual
-defects can't be judged by assertions. It takes its design judgement from
-the [impeccable](https://github.com/pbakaus/impeccable) plugin, which must be
+`/feedback` takes a batch of feedback (a meeting transcript, an email, a
+Word or Excel file, screenshots, an in-app feedback board), turns it into
+discrete items in one cumulative ledger, marks the ones the product already
+satisfies, and then fixes and verifies the rest one by one. Batches overlap;
+the ledger is what stops an ask being done twice or lost.
+
+`/tailor` instantiates the aesthetics master prompt for the current repo: a
+screenshot-driven visual review and fix pass, meant to run unattended over
+every page, state, and theme. The agent drives the browser with the
+Playwright CLI, since visual defects cannot be judged by assertions, and
+takes its design judgement from the
+[impeccable](https://github.com/pbakaus/impeccable) plugin, which must be
 installed where the prompt runs: `/impeccable audit` and
 `/impeccable critique` review each page against the screenshots, and
 impeccable's refine commands (`polish`, `layout`, `typeset`, `adapt`,
@@ -33,23 +33,24 @@ impeccable's refine commands (`polish`, `layout`, `typeset`, `adapt`,
 
 | Skill | Purpose |
 | ----- | ------- |
-| `/tailor <local\|deployed\|azure-deploy\|aesthetics> [hints such as resource group or app name]` | Instantiate a generic validation/deployment master prompt for the current repo and save it to prompts/ |
+| `/feedback [<file, folder, or pasted text>...] [--ledger <path>] [--plan-only]` | Turn a batch of feedback into a ledger of discrete items, skip the ones already done, then fix and verify each of the rest |
+| `/tailor [aesthetics] [hints such as the frontend directory or theme names]` | Instantiate the aesthetics master prompt for the current repo and save it to prompts/ |
 
 † user-invoked only (`disable-model-invocation`) · ‡ runs forked, reports a summary
 
 <!-- generated:skills end -->
 
-Tailored prompts keep their state in `prompts/<name>-progress.md`, so
-running a prompt again in a fresh session resumes where the last pass
-stopped.
+## Notes
 
-## Templates
+The feedback ledger defaults to `docs/feedback-ledger.md` and is committed
+with the code, so it holds requirements, not correspondence: no names, no
+quoted emails.
 
-The generic templates live in `skills/tailor/references/`:
+The tailored aesthetics prompt keeps its state in
+`prompts/aesthetics-progress.md`, so running it again in a fresh session
+resumes where the last pass stopped. The template lives in
+`skills/tailor/references/aesthetics.md`.
 
-| Template | Covers |
-| -------- | ------ |
-| `local-validation.md` | Validating the app on a dev machine with deterministic tests |
-| `deployed-validation.md` | Validating a deployed environment with deterministic tests |
-| `azure-deploy.md` | Deploying to Azure |
-| `aesthetics.md` | UI/visual review and fix: Playwright CLI screenshots, impeccable audit, critique, and refine commands |
+The local-validation, deployed-validation, and azure-deploy templates have
+been removed; see the changelog. `/land` (kokko-git) covers shipping and
+verifying a change.

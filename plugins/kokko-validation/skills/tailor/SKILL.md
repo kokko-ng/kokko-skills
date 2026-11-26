@@ -1,115 +1,76 @@
 ---
 name: tailor
-description: Instantiate a generic validation/deployment master prompt for the current repo and save it to prompts/. Use when the user wants a local-validation, deployed-validation, azure-deploy, or aesthetics prompt tailored to this codebase.
-argument-hint: '<local|deployed|azure-deploy|aesthetics> [hints such as resource group or app name]'
+description: Instantiate the aesthetics master prompt for the current repo and save it to prompts/. Use when the user wants a screenshot-driven UI review-and-fix prompt tailored to this codebase, to run unattended over every page and theme.
+argument-hint: '[aesthetics] [hints such as the frontend directory or theme names]'
 ---
 
 # Tailor Skill
 
-Turn a generic master prompt template into a repo-specific prompt file.
-The templates are deliberately generic — full of `{{PLACEHOLDER}}` tokens
-and optional blocks — and the entire point is to modify them to fit THIS
+Turn the generic aesthetics master prompt into a repo-specific prompt file.
+The template is deliberately generic — full of `{{PLACEHOLDER}}` tokens
+and optional blocks — and the entire point is to modify it to fit THIS
 repo: fill every placeholder from what the codebase actually contains,
 cut blocks that do not apply, and add repo-specific detail the template
 could not know.
 
-## Templates
+## Template
 
-All in `${CLAUDE_PLUGIN_ROOT}/skills/tailor/references/`. Each template
-starts with a `TAILORING NOTES` comment: the full placeholder manifest
-(with the expected source for each value) plus its optional blocks and
-variants. Read it first — it is the authoritative checklist for that
-template.
+`${CLAUDE_PLUGIN_ROOT}/skills/tailor/references/aesthetics.md`: a
+screenshot-driven visual review and fix pass that takes its design
+judgement from the impeccable plugin. It starts with a `TAILORING NOTES`
+comment: the full placeholder manifest (with the expected source for each
+value) plus its optional blocks. Read it first — it is the authoritative
+checklist.
 
-| Argument       | Template                 | Purpose                                                 |
-| -------------- | ------------------------ | ------------------------------------------------------- |
-| `local`        | `local-validation.md`    | Validate the local app with deterministic tests         |
-| `deployed`     | `deployed-validation.md` | Validate the deployed app with deterministic tests      |
-| `azure-deploy` | `azure-deploy.md`        | Deploy to Azure Container Apps with CI/CD               |
-| `aesthetics`   | `aesthetics.md`          | Screenshot-driven visual review and fix via impeccable  |
+`aesthetics` is the only template. The local-validation,
+deployed-validation, and azure-deploy templates have been removed: for
+shipping a change use `/land` (kokko-git), and for working through review
+comments use `/feedback`.
 
 ## Workflow
 
 ### 1. Resolve the argument
 
-The first word of `$ARGUMENTS` selects the template; the remaining words
-are hints (resource group, app name, auth style, ...). If no template is
-named, or the word matches none of the four, ask which one to use
-(AskUserQuestion, one option per template) instead of guessing.
+`$ARGUMENTS` may start with the word `aesthetics`; whatever else it holds
+is hints (the frontend directory, theme names, pages to leave out). If its
+first word names one of the removed templates, say that the template is
+gone and what replaced it, and stop.
 
-### 2. Check for spec.md
-
-`local`, `deployed`, and `azure-deploy` treat `spec.md` as the source of
-truth for what to validate. If it is missing, ask before continuing:
-write it now (recommended: one testable user story per behavior the code
-implements, each with a `US-NNN` ID and its acceptance criteria), proceed
-anyway, or abort.
-
-### 3. Inspect the repo
+### 2. Inspect the repo
 
 Determine, from the code and configuration (not by guessing):
 
 - App name; backend and frontend frameworks, directories, start
-  commands, install commands, local URLs and ports
-- Database type (local and/or cloud), storage paths/accounts
-- Auth mechanism (local and deployed, if distinguishable)
-- Health endpoint route; API endpoints (route files), protected vs
-  public routes
-- Type-check / lint / test commands — confirm they actually exist in
-  package.json / pyproject / Makefile; do not invent them
-- Test tooling for the deterministic-test placeholders (`local`, `deployed`,
-  `azure-deploy`): which runners actually exist (pytest, vitest, jest,
-  `@playwright/test` for the E2E suite, ...), where the suites live, and
-  the exact commands that run them. If the repo has no test setup yet, pick
-  the stack's conventional tooling and fill the placeholders with the
-  commands the suite will use once the prompt creates it — the templates
-  make creating a missing suite part of the prompt's job
-- Existing Azure config: workflow files, bicep/terraform, `.env.example`,
-  CLAUDE.md notes, existing `prompts/*.md`
-- For `aesthetics`: the frontend source directory (`{{FRONTEND_DIR}}`,
-  new in 6.3.0), each routed page's
-  source file (the target the prompt hands to impeccable), the app's
-  themes, and whether `PRODUCT.md` and `DESIGN.md` exist (the prompt runs
-  without them; note their absence in the generation header)
+  commands, local URLs and ports
+- The frontend source directory (`{{FRONTEND_DIR}}`)
+- Every routed page with its route and its source file (the target the
+  prompt hands to impeccable), including the authentication pages
+- The page states worth a screenshot at desktop and at mobile width
+- The app's themes
+- The type-check command — confirm it actually exists in package.json /
+  pyproject / Makefile; do not invent one
+- Whether `PRODUCT.md` and `DESIGN.md` exist (the prompt runs without
+  them; note their absence in the generation header)
 
-### 4. Resolve placeholders
+### 3. Resolve placeholders
 
 Fill EVERY placeholder in the template's manifest. Sources, in order:
-user-supplied hints in `$ARGUMENTS`, repo inspection, then existing Azure
-resources discovered read-only via `az cli` — never create anything while
-tailoring (e.g. fill `{{AZURE_REGION}}` from
-`az group show --name <rg> --query location`). If a value is genuinely
-unknowable (e.g. a resource group that does not exist yet and was not
-named in the hints), ask the user rather than inventing one.
+user-supplied hints in `$ARGUMENTS`, then repo inspection. If a value is
+genuinely unknowable, ask the user rather than inventing one.
 
-Never write secret VALUES into the output file. Resource and account
-names are fine; API keys, passwords, and connection strings are not —
-the tailored prompt gets committed to the repo. Where the template shows
-a secret, keep the retrieval command, not the retrieved value.
+Never write secret VALUES into the output file. The tailored prompt gets
+committed to the repo.
 
-### 5. Adapt, don't just substitute
+### 4. Adapt, don't just substitute
 
 - Delete optional blocks that do not apply (`<!-- OPTIONAL: name -->` ...
-  `<!-- END OPTIONAL: name -->`) together with everything tagged `[name]`
-  elsewhere (whole tagged lines; just the tagged fragment where the tag sits
-  inside a line, such as a `[name: ...]` diagram box); strip the tags from
-  what you keep. Where a template
-  offers variants (e.g. the deployed template's auth variants), keep
-  exactly one and delete the rest.
-- Expand generics with repo detail: real endpoint tables, real protected
-  route lists, real desktop/mobile page states (each page with its route
-  and source file) for aesthetics passes.
-- Keep the template's autonomous-work framing, progress-file mechanism,
+  `<!-- END OPTIONAL: name -->`) together with every line elsewhere tagged
+  `[name]`; strip the tags from what you keep.
+- Expand generics with repo detail: real desktop and mobile page states,
+  each page with its route and source file.
+- Keep the template's autonomous-work framing, defect-ledger mechanism,
   blocker rules, and completion checklist.
-- Keep validation deterministic in `local`, `deployed`, and `azure-deploy`
-  outputs: preserve each template's "Deterministic Testing" section, its
-  test-command placeholders (API, frontend, and Playwright E2E), and the
-  spec-coverage check. Browser coverage belongs in committed
-  `@playwright/test` specs run headlessly by `npx playwright test` — never
-  rewrite validation into agent-driven browsing: no ad-hoc playwright-cli
-  page-driving, no Playwright MCP server or `mcp__playwright__*` /
-  `browser_*` tools, no judging outcomes from screenshots.
-- `aesthetics` is screenshot-driven by design: keep its browser automation
+- The prompt is screenshot-driven by design: keep its browser automation
   on the **Playwright CLI**, never the Playwright MCP server — preserve its
   "Browser Automation -- Playwright CLI" section and its `playwright-cli`
   references. Its design judgement comes from the impeccable plugin
@@ -123,42 +84,41 @@ a secret, keep the retrieval command, not the retrieved value.
 - Keep git usage safe: staging must name explicit file paths (never
   `git add .` or bare directory adds); no history rewrites; nothing force.
 
-### 6. Save
+### 5. Save
 
-Write to `prompts/<template>-<qualifier>.md` in the repo root (create
-`prompts/` if needed), e.g. `prompts/local-validation.md`,
-`prompts/deployed-validation-entra.md`. Fill `{{PROGRESS_FILE}}` with the
-output path plus a `-progress` suffix (e.g.
-`prompts/local-validation-progress.md`). If a file with the same purpose
-already exists, update it in place rather than creating a near-duplicate.
+Write to `prompts/aesthetics.md` in the repo root (create `prompts/` if
+needed; add a qualifier such as `prompts/aesthetics-admin.md` when the repo
+has more than one frontend). Fill `{{PROGRESS_FILE}}` with the output path
+plus a `-progress` suffix (e.g. `prompts/aesthetics-progress.md`). If a
+file with the same purpose already exists, update it in place rather than
+creating a near-duplicate.
 
 Start the file with a short generation-header comment: source template,
 date, and a table of every placeholder value chosen — it makes future
 re-tailoring a diff instead of a redo.
 
-### 7. Verify the output
+### 6. Verify the output
 
 Mechanical checks before reporting — all must be clean:
 
 - `grep -n '{{' prompts/<file>.md` returns nothing (no unresolved
   placeholders)
-- Grepping for `TAILORING NOTES`, `OPTIONAL:`, `AUTH VARIANT`, and each
-  `[tag]` and `[tag:` named in the template's manifest returns nothing (no
-  template scaffolding left)
+- Grepping for `TAILORING NOTES`, `OPTIONAL:`, and each `[tag]` named in
+  the template's manifest returns nothing (no template scaffolding left)
 - Every command the prompt tells its agent to run exists in this repo:
   the type-check script is defined, the start commands and directories
-  are real, referenced routes exist
+  are real, referenced routes and source files exist
 - No secret values anywhere in the file
 
-### 8. Report
+### 7. Report
 
 Report: the file written, every placeholder value chosen and its source,
-blocks and variants removed or kept, sections expanded, and any values
-that need the user's confirmation before the prompt is run.
+blocks removed or kept, sections expanded, and any values that need the
+user's confirmation before the prompt is run.
 
 ## Running the result
 
-Run a tailored prompt directly (paste it or `@prompts/<file>.md`). To make
+Run the tailored prompt directly (paste it or `@prompts/<file>.md`). To make
 another pass, run it again in a fresh session: each pass resumes from the
-prompt's progress file, so completed items are skipped and blocked ones get
+prompt's defect ledger, so fixed items are skipped and blocked ones get
 revisited. Stop when a pass finds nothing new.
