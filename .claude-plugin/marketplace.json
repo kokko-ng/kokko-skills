@@ -34,7 +34,7 @@
     {
       "name": "kokko-ai-config",
       "source": "./plugins/kokko-ai-config/",
-      "description": "AI configuration management skills for pruning and verifying CLAUDE.md and README files.",
+      "description": "AI configuration upkeep: verify CLAUDE.md and README files against the codebase, and carry a session's corrections upstream into the skill or plugin that caused them.",
       "version": "6.3.1",
       "author": {
         "name": "kokko-ng"
