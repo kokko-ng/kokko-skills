@@ -37,8 +37,11 @@ return it to its cheap state afterwards.
 
 ```bash
 az resource list -g <resource group> --subscription <subscription> \
-  --query "[].{name:name,type:type}" -o table
+  --query "[].{name:name,kind:type}" -o table
 ```
+
+(The column is named `kind` on purpose: table output drops a column called
+`type`.)
 
 | Resource | State | Up | Down |
 | -------- | ----- | -- | ---- |
@@ -61,6 +64,14 @@ calling the resources directly, so the two do not fight.
 Print the state of each piece, then request the app's health URL and report
 the HTTP status. A `401` or a redirect to sign-in from an app behind Entra
 sign-in counts as up.
+
+A Container App reports `Running` even when it has scaled to zero, so give
+its replica count as well. Count before requesting the URL, because the
+request itself wakes the app:
+
+```bash
+az containerapp replica list -n <app> -g <rg> --subscription <subscription> --query "length(@)" -o tsv
+```
 
 ## 3. `up`
 
