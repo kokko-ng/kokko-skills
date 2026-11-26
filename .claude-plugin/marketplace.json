@@ -25,7 +25,7 @@
     {
       "name": "kokko-infra",
       "source": "./plugins/kokko-infra/",
-      "description": "Azure infrastructure skills for checking resource costs and service status.",
+      "description": "Azure skills for demo and sandbox environments: giving people access, and waking environments, keeping them up, and putting them back to sleep.",
       "version": "6.3.1",
       "author": {
         "name": "kokko-ng"

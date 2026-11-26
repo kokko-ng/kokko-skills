@@ -1,7 +1,7 @@
 {
   "name": "kokko-infra",
   "version": "6.3.1",
-  "description": "Azure infrastructure skills for checking resource costs and service status.",
+  "description": "Azure skills for demo and sandbox environments: giving people access, and waking environments, keeping them up, and putting them back to sleep.",
   "author": {
     "name": "kokko-ng"
   },
@@ -11,7 +11,7 @@
     "azure",
     "infrastructure",
     "cloud",
-    "costs",
-    "status"
+    "access",
+    "demo"
   ]
 }
