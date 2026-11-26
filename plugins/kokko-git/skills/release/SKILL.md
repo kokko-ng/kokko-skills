@@ -1,20 +1,36 @@
 ---
 name: release
-description: Bump version across all files and open/merge a PR; the Release workflow publishes.
-argument-hint: '[patch|minor|major] [--version x.y.z]'
-allowed-tools: Bash(git:*), Bash(gh:*), Bash(bash:*), Bash(grep:*), Bash(jq:*), Read, Edit, Grep, Glob, AskUserQuestion, mcp__github__create_pull_request, mcp__github__merge_pull_request, mcp__github__pull_request_read, mcp__github__list_releases, mcp__github__actions_list, mcp__github__get_job_logs
-disable-model-invocation: true
+description: Bump the version across all files and open a pull request, merging it when told to; the repo's own release flow publishes. Use when the user asks to bump a version, cut or publish a release, or ship a new version of a repo, plugin, or skill.
+argument-hint: '[patch|minor|major] [--version x.y.z] [--merge]'
+allowed-tools: Bash(git:*), Bash(gh:*), Bash(az:*), Bash(bash:*), Bash(grep:*), Bash(jq:*), Read, Edit, Grep, Glob, AskUserQuestion
 ---
 
 # Version Bump and Release
 
-Increment version, then open and merge a PR. The GitHub release itself is
-published automatically by the Release workflow once CI succeeds on `main`.
-`$ARGUMENTS` sets the bump type (patch/minor/major, default patch) or an explicit `--version x.y.z`.
+Increment the version, open a pull request for it, and merge it when
+authorized. Publishing belongs to the repo's own release flow, which this
+skill follows rather than replaces.
+
+`$ARGUMENTS` sets the bump type (patch/minor/major, default patch) or an
+explicit `--version x.y.z`. `--merge` authorizes merging the pull request once
+its checks pass, without asking again; so does a request that says to merge
+("bump a version and merge to main").
+
+The repo may live on GitHub or Azure DevOps. The pull request, check, and
+merge commands for both are in `${CLAUDE_PLUGIN_ROOT}/references/hosts.md`;
+read it once and use the column for this repo's host.
 
 ## Steps
 
-### 1. Detect current version
+### 1. Read the repo's release flow
+
+Read `CONTRIBUTING.md`, the release section of `README.md` or `CLAUDE.md`,
+and the release workflow if there is one (`.github/workflows/release*.yml`,
+a release stage in `azure-pipelines*.yml`). Note who publishes: a workflow
+that fires after the merge, a manual tag, or nothing documented. That
+decides step 6.
+
+### 2. Detect current version
 
 If the repo has a bump script, it owns the version locations — read the
 current version from where it writes (for kokko-skills:
@@ -30,11 +46,15 @@ grep -rn "__version__" . --include="__init__.py"
 git describe --tags --abbrev=0
 ```
 
-### 2. Calculate new version
+### 3. Calculate new version
 
 Semantic versioning: patch = Z+1 (fixes), minor = Y+1/Z=0 (features), major = X+1/Y=0/Z=0 (breaking).
+When no bump type was given, read the unreleased commits
+(`git log <last tag>..HEAD --oneline`) and take the largest they call for: a
+`feat!` or `BREAKING CHANGE` means major, a `feat` means minor, anything else
+patch.
 
-### 3. Update every version reference
+### 4. Update every version reference
 
 If `scripts/bump-version.sh` exists (it does in kokko-skills), use it — it
 rewrites every plugin manifest and marketplace entry in lock-step and ends
@@ -44,50 +64,75 @@ with the sync check; do not grep-and-edit version strings by hand:
 bash scripts/bump-version.sh X.Y.Z
 ```
 
-Otherwise replace the old version in every file from step 1. Keep formats
+Otherwise replace the old version in every file from step 2. Keep formats
 consistent — no `v` prefix in files, `v` prefix on the git tag. Then verify:
 
 ```bash
 git diff
 ```
 
-### 4. Create the version-bump PR
+### 5. Create the version-bump pull request
 
 If the repo keeps a `CHANGELOG.md`, rename its `## Unreleased` heading to
 `## X.Y.Z - YYYY-MM-DD` (or add an entry for X.Y.Z if there is none) so the
-changelog ships in the same PR as the bump.
+changelog ships in the same pull request as the bump.
 
 Branch, commit, and push. Stage the modified files by explicit path from the
-`git status` output — never `git add .` (it sweeps in untracked files):
+`git status` output — never `git add .` (it sweeps in untracked files). Word
+the commit the way the repo's earlier release commits are worded, defaulting
+to `chore: release X.Y.Z`:
 
 ```bash
-git checkout -b version-bump-vX.Y.Z
+git log --oneline -i --grep='release\|bump' -5
+git checkout -b release-vX.Y.Z
 git status --porcelain
 git add <each modified file, named explicitly>
-git commit -m "chore: bump version to vX.Y.Z"
-git push -u origin version-bump-vX.Y.Z
+git commit -m "chore: release X.Y.Z"
+git push -u origin release-vX.Y.Z
 ```
 
-Open the PR with the GitHub MCP tool `mcp__github__create_pull_request` (base `main`, title "Bump version to vX.Y.Z"). Fallback: `gh pr create` if the MCP server is unavailable.
+Open the pull request against the default branch with the host's CLI
+(`gh pr create`, or `az repos pr create` on Azure DevOps), titled
+"Release X.Y.Z".
 
-### 5. Confirm and merge the PR
+### 6. Merge when authorized
 
-Run quality checks and wait for CI. Then **confirm with AskUserQuestion before merging** — show the PR number, title, and CI status, with options "Merge", "Wait", "Abort". Only after approval, merge via `mcp__github__merge_pull_request` (fallback: `gh pr merge --merge`).
+Wait for the pull request's checks (`gh pr checks <n> --watch`, or
+`az repos pr policy list --id <n>` on Azure DevOps). A failing check stops
+the run: report it, do not merge.
 
-### 6. Verify the automated release
+- With `--merge`, or when the request said to merge: merge as soon as the
+  checks pass.
+- Otherwise confirm with AskUserQuestion first — show the pull request
+  number, title, and check status, with options "Merge", "Wait", "Abort".
 
-This command's job ends at the version bump + merge. Publishing is owned by
-the Release workflow (`.github/workflows/release.yml`): after the merge lands
-on `main` and CI succeeds, the workflow creates the `vX.Y.Z` GitHub release
-automatically. Do not run `gh release create` or push tags by hand.
+Merge with a merge commit, never a squash or a rebase:
 
-Monitor the CI and Release workflow runs (`mcp__github__actions_list` /
-`mcp__github__get_job_logs`, or `gh run list`) and confirm the release exists
-once they finish (`mcp__github__list_releases` or `gh release view vX.Y.Z`).
-If the workflow did not fire (e.g. CI failed), report why instead of
-publishing manually.
+```bash
+gh pr merge <n> --merge
+az repos pr update --id <n> --status completed --squash false --delete-source-branch false
+```
+
+Run the one line for this repo's host. A required review or a branch policy
+that blocks the merge is not something to work around: stop and report the
+pull request link.
+
+### 7. Publish the way the repo publishes
+
+- **A workflow publishes after the merge** (kokko-skills:
+  `.github/workflows/release.yml` creates the `vX.Y.Z` release once CI
+  succeeds on `main`). Do not run `gh release create` or push tags by hand.
+  Watch the CI and release runs (`gh run list`, `gh run watch`) and confirm
+  the release exists (`gh release view vX.Y.Z`). If the workflow did not
+  fire, report why instead of publishing manually.
+- **The documented flow is a manual tag or release.** Do exactly what the
+  repo documents, after the merge, from the updated default branch.
+- **Nothing is documented.** Stop at the merged bump and say that the repo
+  has no publisher; do not invent one.
 
 ## Notes
 
 - No emojis or attribution footers in commits or release notes.
 - Version not found → search manually and add the file to the update set.
+- A plugin or skill release only reaches a running session after the plugin
+  is updated there (`/plugins-update`, then `/reload-plugins`).

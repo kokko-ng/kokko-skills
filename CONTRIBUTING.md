@@ -49,8 +49,11 @@ entry matches its plugin manifest (name, version, description) and that every
 1. Create `plugins/<name>/` with a `.claude-plugin/plugin.json` manifest.
    Every user-facing capability is a skill in `skills/<skill>/SKILL.md`
    (frontmatter: `name`, `description`, and `argument-hint` whenever the
-   body reads `$ARGUMENTS`; `disable-model-invocation: true` for anything
-   with side effects the user should trigger; `context: fork` plus
+   body reads `$ARGUMENTS`; `disable-model-invocation: true` only for
+   skills that delete things or change the machine's own setup. Everything
+   else stays invocable from a plain request and says so in its
+   description with a "Use when ..." sentence, since that is how the
+   skills are mostly reached; `context: fork` plus
    `background: false` for long orchestrations that should hand back a
    summary). Legacy `commands/` are still read but not used here. Agents go
    in `agents/<agent>.md` (`name`, `description`, and only model aliases,

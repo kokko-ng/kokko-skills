@@ -1,7 +1,7 @@
 {
   "name": "kokko-validation",
-  "version": "6.3.1",
-  "description": "Generic validation and deployment master-prompt templates plus a tailor skill that instantiates them for the current repo.",
+  "version": "7.0.0",
+  "description": "Work through feedback with a verified ledger, and tailor an aesthetics master prompt to the current repo.",
   "author": {
     "name": "kokko-ng"
   },
@@ -9,8 +9,8 @@
   "license": "MIT",
   "keywords": [
     "validation",
-    "deployment",
-    "azure",
+    "feedback",
+    "aesthetics",
     "prompts",
     "templates"
   ]

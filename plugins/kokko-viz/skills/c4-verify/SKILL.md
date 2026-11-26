@@ -1,7 +1,7 @@
 ---
 name: c4-verify
 description: Verify C4 diagrams against the codebase and auto-fix discrepancies.
-argument-hint: '[system-id]'
+argument-hint: '[system-id] [--eli5] [--export <dir>]'
 allowed-tools: Agent, Bash, Read, Write, Glob, Grep
 context: fork
 background: false
@@ -54,9 +54,11 @@ Phase 1: Prep -> Phase 2: Parallel Verification (5 checks) -> Phase 3: Synthesis
 
 ## Phase 1: Preparation
 
-The system to verify is `$0`. If an argument was given, use it as
+The system to verify is `$0`, unless `$0` starts with `--`: the flags
+`--eli5` and `--export <dir>` (rule 6 of the `c4` skill) may appear anywhere
+in `$ARGUMENTS` and are not a system id. If a system id was given, use it as
 `SYSTEM_ID` and verify `codemap/<SYSTEM_ID>/` exists — report the error and
-stop if it does not. With no argument:
+stop if it does not. With no system id:
 
 ```bash
 ls codemap/
@@ -282,6 +284,18 @@ Remaining issues: [list any unfixed]
 
 **6C.** Update `codemap/README.md` with the verification timestamp (this is
 the only file 6B–6C may touch).
+
+**6D. Plain-language companion.** `codemap/<SYSTEM_ID>/eli5.md` is part of
+the model, not an orphan: never delete it as one. When it exists, or
+`--eli5` was given, check it against the corrected model per
+`c4-templates.md#eli5-companion` (every container present and linked, no
+part the model lacks, flows that still match the edges) and rewrite what
+is out of step. Count what changed under Documentation in the summary.
+
+**6E. Export.** With `--export <dir>`, and only when the status is PASS or
+PARTIAL with no render failures, copy the model to `<dir>/<SYSTEM_ID>/` per
+`c4-templates.md#export`. This writes outside the repo and is the one
+exception to 6C's limit.
 
 ---
 

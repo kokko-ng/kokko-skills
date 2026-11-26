@@ -22,6 +22,7 @@ codemap/
     ├── context.svg              # standalone SVG ├ generated, never hand-edited
     ├── context.png              # raster @2x     ┘
     ├── context.md
+    ├── eli5.md                  # optional plain-language companion (#eli5-companion)
     └── containers/
         └── <container-id>/
             ├── container.c4.json
@@ -346,6 +347,114 @@ Convert it:
 4. Update every `.md` diagram section and `codemap/README.md`.
 
 Do not keep both formats. Two sources of record diverge within a week.
+
+---
+
+## ELI5 Companion
+
+`codemap/<system-id>/eli5.md` is an optional plain-language walkthrough of
+one system, for a reader who has never seen the code and may not be an
+engineer. A run writes it when asked with `--eli5`, and from then on every
+update and verification run keeps it current, because a companion that
+disagrees with the model is worse than none.
+
+```markdown
+# [System Name], explained simply
+
+<!-- Last updated: YYYY-MM-DD -->
+
+[Technical view](./context.md)
+
+## What it is for
+
+[Two or three sentences: who uses it and what they get from it.]
+
+![System context](./context.png)
+
+## The parts
+
+| Part | What it does |
+|------|--------------|
+| [[Container name]](./containers/<container-id>/container.md) | [One sentence, in everyday words] |
+
+## What happens when [the main thing a user does]
+
+1. [Step, naming each part in bold as it comes into play]
+
+## Where the information lives
+
+[What is stored, where, and for how long, without product names where a
+plain word will do.]
+
+## What it relies on
+
+[The outside systems from the context level, one line each.]
+
+## Words you will hear
+
+| Term | Meaning |
+|------|---------|
+```
+
+Rules:
+
+- **Only what the model says.** Every part, flow, and dependency comes from
+  the specs and documents at the three levels. The companion adds no fact of
+  its own and names no part the model does not have.
+- **Every container appears** in "The parts", linked to its `container.md`.
+  One to three flows, the ones a newcomer would ask about first.
+- **Plain words.** Short sentences. An analogy only where it makes a part
+  clearer, never as decoration. No code identifiers, file names, or class
+  names in the prose: a reader who wants those follows the link to the
+  technical view. (That also keeps the companion clear of the source-link
+  rule, which applies to any file it does name.)
+- **Embeds, not new diagrams.** Reuse the rendered `.png` files by relative
+  path. The companion has no spec of its own.
+- `context.md` links to it on the line under its title:
+  `[Plain-language version](./eli5.md)`.
+
+---
+
+## Export
+
+`--export <dir>` copies a finished model somewhere outside the repo for
+reading: a notes vault, a shared folder, a handover pack. The repo's
+`codemap/` stays the source of record; the export is a copy that the next
+export replaces.
+
+1. Run it last, after rendering and every check have passed.
+2. The destination is `<dir>/<system-id>/`. Create `<dir>` if only its last
+   segment is missing. Refuse a `<dir>` inside the repo's own `codemap/`.
+3. Replace that one folder wholesale, so documents for elements that no
+   longer exist do not linger. Touch nothing else in `<dir>`.
+4. Copy the documents and the rasters only, keeping the folder layout so
+   links between documents and image embeds still resolve:
+
+   ```bash
+   rm -rf "<dir>/<system-id>"
+   mkdir -p "<dir>/<system-id>"
+   rsync -a --prune-empty-dirs --include='*/' --include='*.md' --include='*.png' \
+     --exclude='*' "codemap/<system-id>/" "<dir>/<system-id>/"
+   ```
+
+   Without `rsync`, copy the same set with `find` and `cp`. The specs, the
+   `.html` and `.svg` renders, and the vendored renderer stay behind.
+5. In the copy only, rewrite every link that points outside the codemap (the
+   source-file links) to an absolute URL on the default branch, since a
+   relative path means nothing outside the repo:
+
+   | Remote | URL form |
+   | ------ | -------- |
+   | GitHub | `https://github.com/<owner>/<repo>/blob/<branch>/<path>` |
+   | Azure DevOps | `https://dev.azure.com/<org>/<project>/_git/<repo>?path=/<path>&version=GB<branch>` |
+   | none | No link: leave the path as inline code |
+
+   Links between codemap documents stay relative.
+6. Add one line under the title of the exported `context.md`:
+   `Exported from <repo> at <short sha> on YYYY-MM-DD. Edit it in the repo, not here.`
+7. Never `git add` the export from the source repo, and do not commit in the
+   destination: what happens to a vault or a shared folder is the user's
+   call.
 
 ---
 

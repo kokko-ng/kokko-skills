@@ -6,6 +6,97 @@ Changelog](https://keepachangelog.com/). Releases before 3.6.0 are
 documented in [GitHub
 Releases](https://github.com/kokko-ng/kokko-skills/releases) only.
 
+## 7.0.0 - 2026-11-26
+
+Major: three skills and three templates are removed. The rest of the release
+reshapes the marketplace around how it is actually used: requests typed as
+plain sentences rather than slash commands, repos on Azure DevOps as well as
+GitHub, and a handful of jobs that kept being asked for by hand.
+
+### Added
+
+- kokko-git `/land`: commit, push, deploy to the repo's documented
+  environment, verify the deployment, and merge to the default branch with a
+  merge commit. It reads the deploy path from the repo's `CLAUDE.md`, deploy
+  docs, and pipelines, asks once when the target is not written down and
+  records the answer under `## Deploy`, and never deploys to an environment
+  the docs call production or off limits. Claude picks it up from requests
+  such as "commit, push, deploy".
+- kokko-git `/worklog`: a timesheet-ready write-up of the work in one or
+  more repos over a date range, from git history including branches that
+  were never pushed. Plain language, a set number of sentences per day, no
+  commit hashes, branch names, or times. Read-only.
+- kokko-git `references/hosts.md`: the GitHub and Azure DevOps commands for
+  pull requests, checks, merges, and pipeline runs, shared by `/land`,
+  `/release`, and `/prune`.
+- kokko-infra `/az-access`: give a named person access to a deployed app, a
+  resource group, or an Azure DevOps project. It finds the layer that is
+  refusing them (tenant membership, the app's sign-in assignment, roles
+  inside the app, Azure RBAC, Azure DevOps), grants there and no wider,
+  confirms the grant, and drafts the note to send.
+- kokko-infra `/az-demo`: `up`, `down`, and `status` for a demo or sandbox
+  environment (Container Apps, AKS clusters and node pools, App Service,
+  serverless Azure SQL, PostgreSQL flexible server, virtual machines), with
+  `--until` and `--schedule` reverts that run in Azure or in the project's
+  own pipelines, never on the session's machine.
+- kokko-validation `/feedback`: turn a transcript, email, Word or Excel
+  file, screenshots, or a feedback board into one cumulative ledger of
+  discrete items, mark the ones the product already satisfies, then fix and
+  verify the rest.
+- kokko-ai-config `/upstream-fix`: carry the corrections made to a skill's
+  output in a session back into that skill's source repo as a pull request
+  with a version bump, preferring a mechanical check over a prose rule. It
+  stops at the open pull request unless told to merge.
+- kokko-viz `/c4-map`, `/c4-update`, `/c4-verify`: `--eli5` writes
+  `codemap/<system-id>/eli5.md`, a plain-language companion derived from the
+  model, which later runs then keep current; `--export <dir>` copies the
+  finished documents and images to `<dir>/<system-id>/` (a notes vault, a
+  handover folder) with source-file links rewritten to absolute GitHub or
+  Azure DevOps URLs.
+
+### Changed
+
+- kokko-git `/compush`, `/sync`, and `/release` can now be invoked by
+  Claude (they were user-invoked only), and their descriptions carry the
+  phrasings that should trigger them, so "commit and push" or "bump a
+  version" reaches the skill and its rules.
+- kokko-git `/compush` checks the configured git identity against the
+  authors of the repo's recent commits before committing, and stops when
+  they differ.
+- kokko-git `/release` works on Azure DevOps as well as GitHub and drives
+  both through their CLIs; the GitHub MCP tools are gone from its
+  `allowed-tools`. `--merge`, or a request that says to merge, merges once
+  the checks pass without a second question; otherwise it still confirms.
+  It reads the repo's documented release flow first and publishes the way
+  that flow says, and it picks the bump type from the unreleased commits
+  when none is given. The default branch name is `release-vX.Y.Z` and the
+  default commit is `chore: release X.Y.Z`.
+- kokko-git `/prune` covers linked worktrees (`worktrees` scope: clean and
+  merged ones are offered for removal, dirty or unpushed ones are reported
+  and kept), runs across several repos with `--repos` or from a directory
+  of repos, and checks merged pull requests on Azure DevOps too. It never
+  runs `git worktree remove --force`.
+- kokko-validation `/tailor` instantiates the aesthetics prompt only.
+- CONTRIBUTING: `disable-model-invocation` is for skills that delete things
+  or change the machine's setup; everything else carries a "Use when ..."
+  sentence in its description.
+
+### Fixed
+
+- kokko-notifications: the hook commands quote `${CLAUDE_PLUGIN_ROOT}`, so a
+  plugin installed under a path with a space in it still runs its hooks
+  (`claude plugin validate` warned about the unquoted form). The CI check
+  that each hook command resolves to an executable strips the quotes first.
+
+### Removed
+
+- kokko-infra `/az-costs` and `/az-status`. Each was used once.
+- kokko-ai-config `/prune-docs`.
+- kokko-validation's `local-validation`, `deployed-validation`, and
+  `azure-deploy` templates, and the matching `/tailor` arguments. `/land`
+  covers shipping and verifying a change; tailored prompt files already
+  written into a repo keep working, since they are plain prompts.
+
 ## 6.3.1 - 2026-10-19
 
 ### Fixed

@@ -36,14 +36,21 @@ Shared references live in `skills/c4/references/`:
 
 | Skill | Purpose |
 | ----- | ------- |
-| `/c4-map [target-directory]` ‡ | Generate a hierarchical C4 architecture map (context/containers/components) from a codebase |
-| `/c4-update [system-id]` ‡ | Update an existing C4 model to match current code changes |
-| `/c4-verify [system-id]` ‡ | Verify C4 diagrams against the codebase and auto-fix discrepancies |
+| `/c4-map [target-directory] [--eli5] [--export <dir>]` ‡ | Generate a hierarchical C4 architecture map (context/containers/components) from a codebase |
+| `/c4-update [system-id] [--eli5] [--export <dir>]` ‡ | Update an existing C4 model to match current code changes |
+| `/c4-verify [system-id] [--eli5] [--export <dir>]` ‡ | Verify C4 diagrams against the codebase and auto-fix discrepancies |
 | `/c4` | Authoring rules and shared templates for C4 architecture and codemap documents - Insight-branded diagrams rendered from JSON specs, mandatory source-file hyperlinks, no validation report files, template and diagram conventions |
 
 † user-invoked only (`disable-model-invocation`) · ‡ runs forked, reports a summary
 
 <!-- generated:skills end -->
+
+`/c4-map`, `/c4-update` and `/c4-verify` take two optional flags. `--eli5`
+adds `codemap/<system-id>/eli5.md`, a plain-language walkthrough derived
+from the model; once it exists, later runs keep it current. `--export <dir>`
+copies the finished documents and images to `<dir>/<system-id>/` (a notes
+vault, a handover folder) with source links rewritten to absolute URLs; the
+repo stays the source of record.
 
 ## Agents
 

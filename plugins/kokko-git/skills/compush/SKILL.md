@@ -1,9 +1,8 @@
 ---
 name: compush
-description: Stage, commit (Conventional Commits), and push one logical change.
+description: Stage, commit (Conventional Commits), and push one logical change. Use when the user asks to commit, to push, or to commit and push ("commit and push", "push this", "push"), and nothing more. When the same request also asks to deploy or to merge to the default branch, use land instead.
 argument-hint: '[files] [--message "msg"]'
 allowed-tools: Bash(git:*), Bash(detect-secrets:*), Bash(detect-secrets-hook:*), Bash(ls:*), Bash(pre-commit:*), Bash(uv run pre-commit:*), Read, Edit
-disable-model-invocation: true
 ---
 
 # Commit and Push
@@ -11,6 +10,20 @@ disable-model-invocation: true
 Stage, commit, and push a single logical change. Honor `$ARGUMENTS` as files to commit and/or a `--message` override.
 
 ## Steps
+
+### 0. Check who the commit will be from
+
+```bash
+git config user.name
+git config user.email
+git log -5 --format='%an <%ae>'
+```
+
+The configured identity should be the one the repo's recent commits carry.
+If it is not (a container default, a machine account, a second address),
+stop and show both before committing anything: a commit under the wrong
+author can only be corrected by rewriting history. Do not set `user.name` or
+`user.email` yourself unless the user says which identity to use.
 
 ### 1. Assess scope and stage
 
@@ -78,6 +91,9 @@ Write a Conventional Commits message: `type(scope): subject`
 - Footer (optional): `Closes #N`, or `BREAKING CHANGE: <desc>`.
 
 Types: feat, fix, docs, style, refactor, perf, test, build, ci, chore, revert.
+
+No attribution or co-author trailers, and no emojis, unless the repo's own
+history uses them.
 
 ### 5. Push
 
