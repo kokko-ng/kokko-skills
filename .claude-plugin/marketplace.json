@@ -7,7 +7,7 @@
     {
       "name": "kokko-git",
       "source": "./plugins/kokko-git/",
-      "description": "Git workflow skills for commit+push, branch pruning, releases, and syncing.",
+      "description": "Git workflow skills for commit and push, landing work through deploy and merge, releases, syncing, branch and worktree pruning, and timesheet write-ups, on GitHub and Azure DevOps.",
       "version": "6.3.1",
       "author": {
         "name": "kokko-ng"

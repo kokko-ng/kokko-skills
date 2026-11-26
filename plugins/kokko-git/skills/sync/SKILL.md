@@ -1,14 +1,16 @@
 ---
 name: sync
-description: Pull latest base branch and merge/rebase it into the current branch.
+description: Pull latest base branch and merge/rebase it into the current branch. Use when the user asks to sync, update, or catch up a branch or a repo with main or another base branch.
 argument-hint: '[base-branch] [--strategy merge|rebase]'
 allowed-tools: Bash(git:*), Read, Edit
-disable-model-invocation: true
 ---
 
 # Sync with Base Branch
 
 Integrate the latest base branch into the current branch. `$ARGUMENTS` sets the base branch (default `main`) and `--strategy` (merge or rebase, default merge). Use the chosen base branch everywhere `<base>` appears below — do not hardcode `main`.
+
+On the base branch itself this is a fast-forward pull: the merge in step 2
+moves the local branch up to `origin/<base>` and there is nothing to push.
 
 ## Steps
 
