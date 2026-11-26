@@ -557,7 +557,10 @@ and `lint.py` prove the ones that are checkable.
 - **Rule 5, structurally.** Every connector runs in a *gutter* (the empty band
   between two rows) or a *side lane* (an empty column outside the widest row),
   so nothing can pass behind a node that is not its endpoint. `--check` still
-  asserts it.
+  asserts it. A side lane runs one inset outside the outermost node or
+  boundary, on the side its two ends lean towards, not at the edge of the
+  canvas: on a canvas wider than its content the line stays beside the
+  diagram.
 - **Z-order.** Background, boundaries, arrows, labels, boundary names, nodes,
   key, so a mask can never be clipped by a node drawn after it.
 - **The 4px grid** on every coordinate, size and font size.
